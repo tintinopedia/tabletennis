@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only Ahaan's Google account can write.
+    function isAhaan() {
+      return request.auth != null
+        && request.auth.token.email == 'ahaan@tintinopedia.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function prevComplete(day) {
+      return day == 1
+        || get(/databases/$(database)/documents/sessions/$(string(day - 1))).data.status == 'complete';
+    }
+
+    match /sessions/{dayId} {
+      // The dashboard is public.
+      allow read: if true;
+
+      // Sessions must be filled in order: day N needs day N-1 to be complete.
+      allow create: if isAhaan()
+        && request.resource.data.day == int(dayId)
+        && int(dayId) >= 1 && int(dayId) <= 164
+        && request.resource.data.status in ['draft', 'complete']
+        && prevComplete(int(dayId));
+
+      // Editing is allowed; a submitted session can never go back to draft.
+      allow update: if isAhaan()
+        && request.resource.data.day == resource.data.day
+        && request.resource.data.status in ['draft', 'complete']
+        && (resource.data.status != 'complete' || request.resource.data.status == 'complete')
+        && prevComplete(int(dayId));
+
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

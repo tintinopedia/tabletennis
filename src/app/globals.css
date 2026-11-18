@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", ui-sans-serif, sans-serif;
+
+  --color-paper: #f5f4ef;
+  --color-card: #fcfcfb;
+  --color-ink: #0f1b2d;
+  --color-ink-2: #52514e;
+  --color-muted: #8a8880;
+  --color-line: #e4e2da;
+  --color-table: #1f5fae;
+  --color-table-deep: #123c73;
+  --color-ball: #eb6834;
+  --color-good: #0f8a4a;
+  --color-good-soft: #e3f4ea;
+  --color-warn: #b77400;
+  --color-warn-soft: #fbf0d9;
+  --color-bad: #c83b3a;
+  --color-bad-soft: #fbe6e5;
+
+  /* chart roles (validated reference palette, light mode) */
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.court-bg {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.12), transparent 60%),
+    linear-gradient(160deg, var(--color-table), var(--color-table-deep));
+}
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 1;
+}
+.recharts-wrapper *:focus {
+  outline: none;
+}
