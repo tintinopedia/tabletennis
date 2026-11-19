@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Header />
             <main className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">{children}</main>
             <footer className="mx-auto max-w-6xl px-4 pb-10 text-xs text-muted sm:px-6">
-              Tintin · My Table Tennis Journal · tintinopedia.com · Season 1 plan based on The Systematic Player by Bozhidar Hadzhistefanu
+              © 2026 Tintin · My Table Tennis Journal. All rights reserved.
             </footer>
           </DataProvider>
         </AuthProvider>
