@@ -53,6 +53,14 @@ service cloud.firestore {
       allow write: if isAhaan();
     }
 
+    // Reference images uploaded in the drill library.
+    match /images/{id} {
+      allow read: if true;
+      allow create: if isAhaan() && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
+      allow delete: if isAhaan();
+      allow update: if false;
+    }
+
     // My Videos: the public sees published videos only.
     match /videos/{id} {
       allow read: if resource.data.published == true || isAhaan();

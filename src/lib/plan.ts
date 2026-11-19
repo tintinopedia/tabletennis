@@ -48,6 +48,8 @@ export type TestDef = {
   levels: boolean;
 };
 export type Exhibit = { src: string; title: string };
+/** Uploaded reference image; the pixels live in Firestore `images/{id}` */
+export type ImageRef = { id: string; title: string };
 export type CodeDef = {
   code: string;
   name: string;
@@ -57,6 +59,7 @@ export type CodeDef = {
   hr: boolean;
   steps: Step[];
   videos: VideoRef[];
+  images: ImageRef[];
   tests: TestDef[];
   refs?: string;
   exhibits: Exhibit[];
@@ -199,6 +202,7 @@ function buildBuiltinCatalog(): Catalog {
         videos: d.videos.filter((v) => v.code === it.code).map((v) => ({ label: v.label, url: v.url })),
         tests: builtinTests(it.code),
         refs: it.refs,
+        images: [],
         exhibits: EXHIBITS[it.code] ?? [],
         builtin: true,
       };
@@ -216,7 +220,7 @@ export const BUILTIN_CATALOG = buildBuiltinCatalog();
 
 export function mergeCatalog(docs: CodeDoc[]): Catalog {
   const out: Catalog = {};
-  for (const [k, v] of Object.entries(BUILTIN_CATALOG)) out[k] = { ...v, videos: [...v.videos], steps: [...v.steps] };
+  for (const [k, v] of Object.entries(BUILTIN_CATALOG)) out[k] = { ...v, videos: [...v.videos], steps: [...v.steps], images: [...v.images] };
   for (const d of docs) {
     const base = out[d.code];
     if (base) {
@@ -230,6 +234,7 @@ export function mergeCatalog(docs: CodeDoc[]): Catalog {
         hr: d.hr ?? base.hr,
         steps: d.steps ?? base.steps,
         videos: d.videos ?? base.videos,
+        images: d.images ?? base.images,
       };
     } else {
       out[d.code] = {
@@ -241,6 +246,7 @@ export function mergeCatalog(docs: CodeDoc[]): Catalog {
         hr: d.hr ?? false,
         steps: d.steps ?? [],
         videos: d.videos ?? [],
+        images: d.images ?? [],
         tests: (d.tests ?? []).map((t) => ({ ...t, code: d.code })),
         exhibits: [],
         builtin: false,

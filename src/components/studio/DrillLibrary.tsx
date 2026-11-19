@@ -1,10 +1,28 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useData } from "../DataProvider";
 import { ConfirmButton, Field, Toggle, Toast, useToast } from "../ui";
 import { KIND_STYLE, codeBadge } from "../ItemPanel";
 import { BUILTIN_CATALOG, SECTIONS, youtubeId, ytThumb, type CodeDoc, type Kind, type Section, type Step, type TestDef, type VideoRef } from "@/lib/plan";
-import { put, remove } from "@/lib/store";
+import { getImage, newId, put, remove } from "@/lib/store";
+import { compressImage } from "@/lib/image";
+
+/** Image in the editor: existing (id) or freshly picked (data, uploaded on save) */
+type DraftImage = { id?: string; title: string; data?: string };
+const MAX_IMAGES = 2;
+
+function StoredThumb({ id }: { id: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let on = true;
+    getImage(id).then((d) => on && setSrc(d));
+    return () => {
+      on = false;
+    };
+  }, [id]);
+  // eslint-disable-next-line @next/next/no-img-element
+  return src ? <img src={src} alt="" className="h-full w-full object-cover" /> : null;
+}
 
 type Draft = {
   isNew: boolean;
@@ -17,6 +35,7 @@ type Draft = {
   hr: boolean;
   steps: Step[];
   videos: VideoRef[];
+  images: DraftImage[];
   scored: boolean;
   test: Omit<TestDef, "code" | "name"> & { name: string };
 };
@@ -35,7 +54,7 @@ export function DrillLibrary() {
   const open = (code?: string) => {
     setErr(null);
     if (!code) {
-      setDraft({ isNew: true, builtin: false, code: "", name: "", section: "Table drills", kind: "table", minutes: 10, hr: false, steps: [], videos: [], scored: false, test: emptyTest() });
+      setDraft({ isNew: true, builtin: false, code: "", name: "", section: "Table drills", kind: "table", minutes: 10, hr: false, steps: [], videos: [], images: [], scored: false, test: emptyTest() });
     } else {
       const c = catalog[code];
       const t = c.tests[0];
@@ -50,6 +69,7 @@ export function DrillLibrary() {
         hr: c.hr,
         steps: c.steps.map((s) => ({ ...s })),
         videos: c.videos.map((v) => ({ ...v })),
+        images: c.images.map((i) => ({ ...i })),
         scored: !c.builtin && !!t,
         test: t ? { name: t.name, counts: t.counts, target: t.target, direction: t.direction, max: t.max ?? null, step: t.step ?? 1, unit: t.unit ?? "", levels: t.levels } : emptyTest(),
       });
@@ -76,6 +96,7 @@ export function DrillLibrary() {
       videos: draft.videos.filter((v) => v.url.trim()).map((v) => ({ label: v.label.trim() || draft.name.trim(), url: v.url.trim() })),
       updatedAt: Date.now(),
     };
+    const before = catalog[code]?.images ?? [];
     if (!draft.builtin) {
       doc.tests = draft.scored
         ? [
@@ -94,7 +115,19 @@ export function DrillLibrary() {
         : [];
     }
     try {
+      setErr(null);
+      const images = [];
+      for (const im of draft.images) {
+        if (im.id) images.push({ id: im.id, title: im.title.trim() });
+        else if (im.data) {
+          const id = newId();
+          await put("images", id, { data: im.data, createdAt: Date.now() });
+          images.push({ id, title: im.title.trim() });
+        }
+      }
+      doc.images = images;
       await put("codes", code, doc);
+      for (const old of before) if (!images.some((i) => i.id === old.id)) remove("images", old.id).catch(() => {});
       showToast(`${code} saved`);
       setDraft(null);
     } catch (e) {
@@ -138,6 +171,7 @@ export function DrillLibrary() {
                           <span>{c.minutes} min</span>
                           {c.hr && <span className="text-bad">♥ HR</span>}
                           {c.tests.length > 0 && <span>scored</span>}
+                          {c.images.length > 0 && <span>{c.images.length} image{c.images.length > 1 ? "s" : ""}</span>}
                           {c.videos.length > 0 && <span>{c.videos.filter((v) => youtubeId(v.url)).length}/{c.videos.length} on YouTube</span>}
                           {!c.builtin ? <span className="text-[#8fbcf3]">custom</span> : edited.has(c.code) ? <span className="text-warn">edited</span> : null}
                         </span>
@@ -154,7 +188,7 @@ export function DrillLibrary() {
       {draft && (
         <section id="editor" className="card scroll-mt-24 p-5">
           <h2 className="font-display text-2xl font-bold uppercase">{draft.isNew ? "New code" : `Edit ${draft.code}`}</h2>
-          {draft.builtin && <p className="text-sm text-muted">Built-in Season 1 drill. You can change its name, steps, videos and heart-rate default. Its scoring stays as in the Progress Tracker.</p>}
+          {draft.builtin && <p className="text-sm text-muted">Built-in Season 1 drill. You can change its name, steps, videos, images and heart-rate default. Its scoring stays as in the Progress Tracker.</p>}
           <div className="mt-4 grid gap-4 sm:grid-cols-[160px_1fr]">
             <Field label="Code">
               <input className="field w-full px-3 py-2 text-sm uppercase" disabled={!draft.isNew} value={draft.code} placeholder="e.g. D10" onChange={(e) => set({ code: e.target.value.toUpperCase() })} />
@@ -229,6 +263,51 @@ export function DrillLibrary() {
               <button className="btn btn-ghost !py-1 text-xs" onClick={() => set({ videos: [...draft.videos, { label: "", url: "" }] })}>
                 + Add video link
               </button>
+            </div>
+          </div>
+
+          {/* images */}
+          <div className="mt-6">
+            <p className="eyebrow">Reference images (optional, up to {MAX_IMAGES}, PNG or JPG)</p>
+            <div className="mt-2 space-y-2">
+              {draft.images.map((im, i) => (
+                <div key={im.id ?? i} className="flex flex-wrap items-center gap-2">
+                  <span className="h-12 w-20 shrink-0 overflow-hidden rounded bg-card-3">
+                    {im.data ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={im.data} alt="" className="h-full w-full object-cover" />
+                    ) : im.id ? (
+                      <StoredThumb id={im.id} />
+                    ) : null}
+                  </span>
+                  <input className="field min-w-0 flex-1 px-2 py-2 text-sm" placeholder="Caption (optional)" value={im.title} onChange={(e) => set({ images: draft.images.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
+                  {!im.id && <span className="text-xs text-warn">uploads on save</span>}
+                  <button aria-label="Remove image" className="rounded px-2 text-bad hover:bg-card-2" onClick={() => set({ images: draft.images.filter((_, j) => j !== i) })}>
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {draft.images.length < MAX_IMAGES && (
+                <label className="btn btn-ghost inline-block cursor-pointer !py-1 text-xs">
+                  + Add image
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      try {
+                        const data = await compressImage(f);
+                        setDraft((d) => (d && d.images.length < MAX_IMAGES ? { ...d, images: [...d.images, { title: f.name.replace(/\.[^.]+$/, ""), data }] } : d));
+                      } catch (er) {
+                        setErr((er as Error).message);
+                      }
+                    }}
+                  />
+                </label>
+              )}
             </div>
           </div>
 

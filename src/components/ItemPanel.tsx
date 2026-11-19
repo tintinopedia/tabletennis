@@ -3,7 +3,7 @@ import { useState } from "react";
 import { LEVELS, type CodeDef, type Day, type DayItem, type Level } from "@/lib/plan";
 import { isMet } from "@/lib/analytics";
 import type { ItemStatus, TestEntry } from "@/lib/store";
-import { VideoEmbed, ExhibitGrid } from "./Media";
+import { VideoEmbed, ExhibitGrid, StoredImageGrid } from "./Media";
 
 export const KIND_STYLE = {
   table: "bg-table/15 text-[#8fbcf3]",
@@ -107,9 +107,10 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
                 </div>
               )}
               {exhibits.length > 0 && <ExhibitGrid items={exhibits} />}
+              {(def?.images.length ?? 0) > 0 && <StoredImageGrid images={def!.images} />}
               {(item.refs || def?.refs) && <p className="text-xs text-muted">Reference: {item.refs || def?.refs}</p>}
-              {!steps.length && !videos.length && !exhibits.length && !prescription.length && (
-                <p className="text-sm text-muted">No instructions yet. Add steps or a video for {item.code} in Studio, Drill library.</p>
+              {!steps.length && !videos.length && !exhibits.length && !def?.images.length && !prescription.length && (
+                <p className="text-sm text-muted">No instructions yet. Add steps, a video or images for {item.code} in Studio, Drill library.</p>
               )}
             </>
           )}

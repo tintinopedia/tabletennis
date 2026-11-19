@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { youtubeId, ytThumb, type Exhibit, type VideoRef } from "@/lib/plan";
-import type { VideoDoc } from "@/lib/store";
+import { youtubeId, ytThumb, type Exhibit, type ImageRef, type VideoRef } from "@/lib/plan";
+import { getImage, type VideoDoc } from "@/lib/store";
 import { fmtDate } from "@/lib/analytics";
 
 const PlayIcon = ({ size = 18 }: { size?: number }) => (
@@ -182,4 +182,20 @@ export function VideoCarousel({ videos }: { videos: VideoDoc[] }) {
       <VideoModal video={playing} onClose={() => setPlaying(null)} />
     </div>
   );
+}
+
+/** Uploaded reference images, fetched only when shown */
+export function StoredImageGrid({ images }: { images: ImageRef[] }) {
+  const [items, setItems] = useState<Exhibit[] | null>(null);
+  const key = images.map((i) => i.id).join(",");
+  useEffect(() => {
+    let on = true;
+    Promise.all(images.map(async (i) => ({ src: (await getImage(i.id)) ?? "", title: i.title || "Reference image" }))).then((r) => on && setItems(r.filter((x) => x.src)));
+    return () => {
+      on = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (!items) return <div className="h-24 animate-pulse rounded-xl bg-card-2" />;
+  return items.length ? <ExhibitGrid items={items} /> : null;
 }

@@ -1,5 +1,5 @@
 "use client";
-import { collection, deleteDoc, doc, onSnapshot, query, setDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { fb } from "./firebase";
 import type { Level } from "./plan";
 
@@ -25,7 +25,8 @@ export type MantraSection = { id: string; title: string; hint?: string; points: 
 export type MantraDoc = { sections: MantraSection[]; updatedAt?: number };
 export type RecordingDoc = { id: string; createdAt: number; mime: string; duration: number; data: string };
 
-export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra";
+export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra" | "images";
+export type ImageDoc = { data: string; createdAt: number };
 
 /* --------------------------- demo storage -------------------------- */
 const lsKey = (c: Coll) => `tintin-demo-${c}-v2`;
@@ -87,6 +88,19 @@ export async function put(c: Coll, id: string, data: object): Promise<void> {
     return;
   }
   await setDoc(doc(f.db, c, id), clean);
+}
+
+const imgCache = new Map<string, Promise<string | null>>();
+/** Read one uploaded image (data URL), cached per page load */
+export function getImage(id: string): Promise<string | null> {
+  if (!imgCache.has(id)) {
+    const f = fb();
+    const p = f
+      ? getDoc(doc(f.db, "images", id)).then((d) => (d.exists() ? ((d.data() as ImageDoc).data ?? null) : null))
+      : Promise.resolve(((readLocal("images")[id] as ImageDoc | undefined)?.data) ?? null);
+    imgCache.set(id, p.catch(() => null));
+  }
+  return imgCache.get(id)!;
 }
 
 export async function remove(c: Coll, id: string): Promise<void> {
