@@ -47,7 +47,7 @@ function Blog() {
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div className="flex-1">
           <p className="eyebrow">Blog</p>
-          <h1 className="font-display text-4xl font-bold uppercase">Tintin&apos;s table tennis diary</h1>
+          <h1 className="font-display text-4xl font-bold uppercase">Tintin&apos;s journal</h1>
         </div>
       </div>
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
