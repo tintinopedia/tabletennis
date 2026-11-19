@@ -1,111 +1,291 @@
 "use client";
-import { useMemo, useState } from "react";
-import { useSessions } from "@/components/useSessions";
-import { ScoreChart, HrChart, VolumeChart, Sparkline, MiniLine, Empty } from "@/components/Charts";
-import { DAYS, TOTAL_DAYS, TOURNAMENT_DATE, TEST_BY_CODE, HR_CODES, DRILL_CARDS, phaseList } from "@/lib/plan";
-import { drillStats, weeklyVolume, totals, heartRates, currentDay, daysUntil, fmtDate } from "@/lib/analytics";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useData } from "@/components/DataProvider";
+import { useAuth } from "@/components/AuthProvider";
+import { VolumeChart, DrillPeriodChart, HrPeriodChart, HrReadingsChart, Sparkline, MiniLine, Empty } from "@/components/Charts";
+import { VideoCarousel } from "@/components/Media";
+import { phaseList, isPhysicalTest } from "@/lib/plan";
+import { subscribe, type VideoDoc } from "@/lib/store";
+import {
+  drillStats,
+  totals,
+  heartRates,
+  currentDay,
+  fmtDate,
+  volumeByPeriod,
+  drillByPeriod,
+  hrByPeriod,
+  periodKey,
+  periodLabel,
+  PERIODS,
+  PERIOD_LABEL,
+  type Period,
+} from "@/lib/analytics";
 
 const pct = (v: number | null) => (v == null ? "-" : `${Math.round(v * 100)}%`);
 
-export default function Dashboard() {
-  const sessions = useSessions();
-  const data = useMemo(() => {
-    if (!sessions) return null;
-    return {
-      stats: drillStats(sessions),
-      weeks: weeklyVolume(sessions),
-      tot: totals(sessions),
-      hr: heartRates(sessions),
-      cur: currentDay(sessions),
-    };
-  }, [sessions]);
-  const [drill, setDrill] = useState("D4");
+export default function Home() {
+  const { ready, sessions, days, catalog, tests } = useData();
+  const { user } = useAuth();
+  const [videos, setVideos] = useState<VideoDoc[]>([]);
+  useEffect(() => subscribe<VideoDoc>("videos", (rows) => setVideos(rows.filter((v) => v.published).sort((a, b) => b.order - a.order)), { publishedOnly: true }), []);
+  const [period, setPeriod] = useState<Period>("month");
+  const [drill, setDrill] = useState<string | null>(null);
   const [hrCode, setHrCode] = useState<string | null>(null);
 
-  if (!sessions || !data) return <p className="py-20 text-center text-muted">Loading the journal…</p>;
-  const { stats, weeks, tot, hr, cur } = data;
-  const drillStatsOnly = stats.filter((s) => s.code.startsWith("D"));
-  const physStats = stats.filter((s) => s.code.startsWith("P-"));
-  const sel = stats.find((s) => s.code === drill)!;
-  const hrWithData = HR_CODES.filter((c) => hr[c].length);
-  const activeHr = hrCode && hr[hrCode]?.length ? hrCode : hrWithData[0] ?? null;
+  const data = useMemo(() => {
+    const stats = drillStats(sessions, tests);
+    return { stats, tot: totals(sessions, days, catalog, tests), hr: heartRates(sessions), cur: currentDay(sessions, days) };
+  }, [sessions, days, catalog, tests]);
+  const volume = useMemo(() => volumeByPeriod(sessions, days, catalog, period), [sessions, days, catalog, period]);
+
+  if (!ready) return <p className="py-20 text-center text-muted">Loading the journal…</p>;
+  const { stats, tot, hr, cur } = data;
+  const drillStatsOnly = stats.filter((s) => !isPhysicalTest(s.code));
+  const physStats = stats.filter((s) => isPhysicalTest(s.code));
+  const withData = drillStatsOnly.filter((s) => s.attempts);
+  const selCode = drill && stats.some((s) => s.code === drill) ? drill : (withData.find((s) => s.code === "D4") ?? withData[0] ?? drillStatsOnly[0])?.code;
+  const sel = stats.find((s) => s.code === selCode);
+  const hrCodes = Object.keys(hr)
+    .filter((c) => hr[c].length)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const activeHr = hrCode && hr[hrCode]?.length ? hrCode : hrCodes[0] ?? null;
   const hrRows = activeHr ? hr[activeHr] : [];
-  const hrDelta = hrRows.length >= 2 ? hrRows[hrRows.length - 1].hr - hrRows[0].hr : null;
-  const daysLeft = daysUntil(TOURNAMENT_DATE);
-  const phase = DAYS[Math.min(cur, TOTAL_DAYS) - 1].phase;
+  const spikes = Object.values(hr)
+    .flat()
+    .filter((r) => r.spike)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.day - a.day);
   const levelUps = drillStatsOnly.filter((s) => s.levelUp);
+  const next = days[cur - 1];
+
+  // heatmap: last 8 periods
+  const hmKeys = [...new Set(withData.flatMap((s) => s.series.map((r) => periodKey(r.date, period))))].sort().slice(-8);
+  const hmRows = withData
+    .filter((s) => s.def.target != null)
+    .map((s) => ({
+      s,
+      cells: hmKeys.map((k) => {
+        const rs = s.series.filter((r) => periodKey(r.date, period) === k && r.met != null);
+        return rs.length ? { v: rs.filter((r) => r.met).length / rs.length, n: rs.length } : null;
+      }),
+    }));
 
   return (
     <div className="space-y-6 pt-6">
       {/* Hero */}
-      <section className="court-bg relative overflow-hidden rounded-3xl p-6 text-white sm:p-10">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-ball/90 shadow-[inset_-18px_-18px_0_rgba(0,0,0,0.12)] sm:h-64 sm:w-64" aria-hidden />
-        <div className="relative max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">The Table Tennis Journal</p>
-          <h1 className="font-display mt-2 text-5xl font-bold uppercase leading-[0.9] sm:text-7xl">
-            Ahaan
-            <br />
-            Basu Mojumdar
-          </h1>
-          <p className="mt-4 max-w-lg text-white/85">
-            A 164-day road from first baselines to the May 2027 tournament. Every drill, score and heartbeat is logged here.
-          </p>
+      <section className="court-bg relative overflow-hidden rounded-3xl p-6 sm:p-10">
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/logo.png" alt="Tintinopedia logo" className="h-36 w-36 shrink-0 drop-shadow-[0_10px_30px_rgba(224,48,46,0.25)] sm:h-48 sm:w-48" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-2">My Table Tennis Journal</p>
+            <h1 className="font-display mt-1 text-7xl font-bold uppercase leading-[0.85] sm:text-8xl">Tintin</h1>
+            <p className="mt-2 text-ink-2">Ahaan Basu Mojumdar · every drill, score and heartbeat, session by session.</p>
+          </div>
         </div>
         <div className="relative mt-8 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-white/10 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Tournament</p>
-            <p className="font-display num text-4xl font-bold">{daysLeft > 0 ? `${daysLeft} days` : daysLeft === 0 ? "Today!" : "Done"}</p>
-            <p className="text-xs text-white/70">{fmtDate(TOURNAMENT_DATE, { day: "numeric", month: "long", year: "numeric" })}</p>
-          </div>
-          <div className="rounded-2xl bg-white/10 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Current phase</p>
-            <p className="font-display text-3xl font-bold leading-tight">{cur > TOTAL_DAYS ? "Season complete" : phase}</p>
-            <p className="text-xs text-white/70">{cur > TOTAL_DAYS ? "All sessions logged" : `Next up: Day ${cur}, ${DAYS[cur - 1].sessionType}`}</p>
-          </div>
-          <div className="rounded-2xl bg-white/10 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Plan progress</p>
-            <p className="font-display num text-4xl font-bold">
-              {tot.sessions}
-              <span className="text-xl text-white/60">/{TOTAL_DAYS}</span>
-            </p>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/20">
-              <div className="h-full rounded-full bg-ball" style={{ width: `${(tot.sessions / TOTAL_DAYS) * 100}%` }} />
-            </div>
-          </div>
+          <HeroTile label="Sessions logged" value={String(tot.sessions)} sub={`${days.length} planned so far`} bar={tot.sessions / Math.max(days.length, 1)} />
+          <HeroTile
+            label="Training since"
+            value={tot.firstDate ? fmtDate(tot.firstDate, { month: "short", year: "numeric" }) : "Not started"}
+            sub={tot.firstDate ? `${tot.trainingDays} days on court and in the gym` : "Season 1 starts with Day 1"}
+          />
+          <HeroTile label="Up next" value={next ? `Day ${next.day}` : "Plan more"} sub={next ? `${next.sessionType} · ${next.phase}` : "All planned sessions are logged"} />
         </div>
       </section>
 
-      {/* KPI tiles */}
+      {/* Videos */}
+      {(videos.length > 0 || user) && (
+        <section>
+          <div className="mb-3 flex items-end justify-between">
+            <Head title="My videos" sub="Swipe through, tap to watch." />
+            {user && (
+              <Link href="/studio" className="text-sm font-medium text-[#8fbcf3] hover:underline">
+                Manage
+              </Link>
+            )}
+          </div>
+          {videos.length ? <VideoCarousel videos={videos} /> : <Empty text="No published videos yet. Add YouTube links in Studio, My videos." />}
+        </section>
+      )}
+
+      {/* KPI */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Training hours" value={tot.hours.toFixed(1)} sub={`${tot.trainingSessions} training sessions`} />
+        <Kpi label="Training hours" value={tot.hours.toFixed(1)} sub={`${tot.sessions} sessions`} />
         <Kpi label="Day streak" value={String(tot.streak)} sub={tot.lastDate ? `Last logged ${fmtDate(tot.lastDate)}` : "No sessions yet"} />
         <Kpi label="Tests at target" value={pct(tot.passRate)} sub={`${tot.tests} graded tests`} />
         <Kpi label="Ready to level up" value={String(levelUps.length)} sub={levelUps.length ? levelUps.map((l) => l.code).join(", ") : "Pass twice in a row to move up"} />
+      </section>
+
+      {/* Period switch */}
+      <div className="sticky top-[68px] z-20 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-paper/90 px-3 py-2 backdrop-blur">
+        <span className="eyebrow">Trends</span>
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Period">
+          {PERIODS.map((p) => (
+            <button
+              key={p}
+              role="tab"
+              aria-selected={period === p}
+              onClick={() => setPeriod(p)}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition ${period === p ? "bg-ink text-paper" : "text-ink-2 hover:bg-card-2"}`}
+            >
+              {PERIOD_LABEL[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Volume */}
+      <section className="card p-5">
+        <Head title={`${PERIOD_LABEL[period]} training volume`} sub="Hours from completed steps, split into table work and physical work." />
+        <div className="mt-3">
+          <VolumeChart rows={volume} />
+        </div>
+        {volume.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 gap-3 text-center text-sm">
+            <Stat label={`Avg sessions per ${period === "half" ? "half-year" : period}`} value={(volume.reduce((a, w) => a + w.sessions, 0) / volume.length).toFixed(1)} />
+            <Stat label={`Avg hours per ${period === "half" ? "half-year" : period}`} value={(volume.reduce((a, w) => a + w.table + w.physical, 0) / volume.length).toFixed(1)} />
+            <Stat label="Matches played" value={String(volume.reduce((a, w) => a + w.matches, 0))} />
+          </div>
+        )}
+      </section>
+
+      {/* Drill trends */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="card p-5">
+          <Head title="Drill progress" sub={sel ? `${sel.code} · ${sel.name} · ${sel.def.counts}` : "No scored drills yet"} />
+          <Chips options={drillStatsOnly.map((s) => s.code)} value={selCode ?? ""} onChange={setDrill} dim={(c) => !stats.find((s) => s.code === c)?.attempts} />
+          <div className="mt-3">{sel && <DrillPeriodChart rows={drillByPeriod(sel.series, sel.def, period)} target={sel.def.target} max={sel.def.max} low={sel.def.direction === "low"} unit={sel.def.unit} />}</div>
+          {sel && sel.attempts > 1 && (
+            <p className="mt-2 text-sm text-ink-2">
+              First test <b className="num text-ink">{sel.first}</b> → latest <b className="num text-ink">{sel.latest}</b> · best <b className="num text-ink">{sel.best}</b>
+              {sel.def.direction === "low" ? " (fewer is better)" : ""}.
+            </p>
+          )}
+        </div>
+        <div className="card p-5">
+          <Head title="Drills at target" sub={`Share of tests at target, ${PERIOD_LABEL[period].toLowerCase()}. Brighter is better.`} />
+          {hmRows.length && hmKeys.length ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full border-separate border-spacing-1 text-xs">
+                <thead>
+                  <tr>
+                    <th />
+                    {hmKeys.map((k) => (
+                      <th key={k} className="px-1 pb-1 text-center font-medium text-muted">
+                        {periodLabel(k, period)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {hmRows.map(({ s, cells }) => (
+                    <tr key={s.code}>
+                      <td className="font-display pr-2 text-sm font-bold whitespace-nowrap">{s.code}</td>
+                      {cells.map((c, i) => (
+                        <td
+                          key={i}
+                          title={c ? `${s.code} ${periodLabel(hmKeys[i], period)}: ${Math.round(c.v * 100)}% of ${c.n} tests at target` : "No tests"}
+                          className="num h-8 min-w-11 rounded-md text-center"
+                          style={{ background: c ? `rgba(57,135,229,${0.1 + 0.8 * c.v})` : "rgba(255,255,255,0.03)", color: c && c.v > 0.55 ? "#fff" : "#b7c0cf" }}
+                        >
+                          {c ? `${Math.round(c.v * 100)}` : "·"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-2 text-[11px] text-muted">Numbers are % of tests at target. Empty dot = not tested in that period.</p>
+            </div>
+          ) : (
+            <div className="mt-3 h-60">
+              <Empty />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Heart rate */}
+      <section className="card p-5">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex-1">
+            <Head title="Heart rate" sub="Peak bpm after each drill. Lower at the same work means fitter. ▲ marks a spike: 12+ bpm (or 8%+) above that drill's usual reading." />
+          </div>
+          {spikes.length > 0 && (
+            <span className="rounded-full bg-bad-soft px-3 py-1 text-sm font-semibold text-bad">
+              ▲ {spikes.length} spike{spikes.length > 1 ? "s" : ""} logged
+            </span>
+          )}
+        </div>
+        {hrCodes.length ? (
+          <>
+            <Chips options={hrCodes} value={activeHr!} onChange={setHrCode} badge={(c) => hr[c].filter((r) => r.spike).length} />
+            <div className="mt-4 grid gap-6 lg:grid-cols-2">
+              <div>
+                <p className="mb-1 text-xs font-semibold text-ink-2">
+                  {activeHr} · {PERIOD_LABEL[period].toLowerCase()} average and peak
+                </p>
+                <HrPeriodChart rows={hrByPeriod(hrRows, period)} />
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-semibold text-ink-2">{activeHr} · every reading</p>
+                <HrReadingsChart rows={hrRows} />
+              </div>
+            </div>
+            {spikes.length > 0 && (
+              <div className="mt-5">
+                <p className="eyebrow mb-2">Recent spikes</p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {spikes.slice(0, 6).map((r) => (
+                    <button
+                      key={`${r.code}-${r.day}`}
+                      onClick={() => setHrCode(r.code)}
+                      className="flex items-center gap-3 rounded-xl border border-critical/30 bg-bad-soft px-3 py-2 text-left text-sm"
+                    >
+                      <span className="text-bad">▲</span>
+                      <span className="flex-1">
+                        <b>{r.code}</b> · Day {r.day} · {fmtDate(r.date)}
+                      </span>
+                      <span className="num font-semibold">
+                        {r.hr} <span className="text-xs font-normal text-ink-2">(+{r.delta ?? "?"})</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-3 h-52">
+            <Empty text="Heart-rate readings will appear here once logged." />
+          </div>
+        )}
       </section>
 
       {/* Season map */}
       <section className="card p-5">
         <Head title="Season map" sub="One square per planned day. Filled squares are logged sessions." />
         <div className="mt-4 space-y-3">
-          {phaseList().map((p) => (
+          {phaseList(days).map((p) => (
             <div key={p.name} className="grid gap-2 sm:grid-cols-[190px_1fr] sm:items-center">
               <div>
                 <p className="text-sm font-semibold">{p.name}</p>
                 <p className="text-xs text-muted">
-                  Days {p.start}–{p.end} · {DAYS.slice(p.start - 1, p.end).filter((d) => sessions[d.day]?.status === "complete").length}/{p.end - p.start + 1} logged
+                  Days {p.start}–{p.end} · {days.slice(p.start - 1, p.end).filter((d) => sessions[d.day]?.status === "complete").length}/{p.end - p.start + 1} logged
                 </p>
               </div>
               <div className="flex flex-wrap gap-[3px]">
-                {DAYS.slice(p.start - 1, p.end).map((d) => {
+                {days.slice(p.start - 1, p.end).map((d) => {
                   const done = sessions[d.day]?.status === "complete";
-                  const isCur = d.day === cur;
                   const rest = d.duration === 0;
                   return (
                     <span
                       key={d.day}
                       title={`Day ${d.day} · ${d.sessionType}${done ? ` · logged ${fmtDate(sessions[d.day].trainingDate)}` : ""}`}
                       className={`h-4 w-4 rounded-[4px] ${
-                        done ? (rest ? "bg-[#86b6ef]" : "bg-table") : isCur ? "bg-ball ring-2 ring-ball/30" : rest ? "border border-dashed border-line bg-transparent" : "bg-line"
+                        done ? (rest ? "bg-[#6aa5ec]/55" : "bg-table") : d.day === cur ? "bg-ball ring-2 ring-ball/30" : rest ? "border border-dashed border-line-2" : "bg-card-3"
                       }`}
                     />
                   );
@@ -116,22 +296,22 @@ export default function Dashboard() {
         </div>
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-ink-2">
           <Key cls="bg-table" label="Training logged" />
-          <Key cls="bg-[#86b6ef]" label="Rest day logged" />
+          <Key cls="bg-[#6aa5ec]/55" label="Rest day logged" />
           <Key cls="bg-ball" label="Next session" />
-          <Key cls="bg-line" label="Upcoming" />
-          <Key cls="border border-dashed border-line" label="Upcoming rest day" />
+          <Key cls="bg-card-3" label="Upcoming" />
+          <Key cls="border border-dashed border-line-2" label="Upcoming rest day" />
         </div>
       </section>
 
-      {/* Drill scoreboard */}
+      {/* Scoreboard */}
       <section className="card overflow-hidden">
         <div className="p-5 pb-3">
-          <Head title="Drill scoreboard" sub="10-ball tests from the Progress Tracker. 8/10 (or the drill's target) twice in a row at one level means move up." />
+          <Head title="Drill scoreboard" sub="Target met twice in a row at one level means move up." />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="border-y border-line bg-paper/60 text-left text-xs text-muted">
+              <tr className="border-y border-line bg-card-2/50 text-left text-xs text-muted">
                 <th className="px-5 py-2 font-medium">Drill</th>
                 <th className="px-2 py-2 text-right font-medium">Tests</th>
                 <th className="px-2 py-2 text-right font-medium">Latest</th>
@@ -144,124 +324,67 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {drillStatsOnly.map((s) => {
-                const max = TEST_BY_CODE[s.code].max;
-                return (
-                  <tr
-                    key={s.code}
-                    onClick={() => setDrill(s.code)}
-                    className={`cursor-pointer border-b border-line/70 transition hover:bg-paper/70 ${drill === s.code ? "bg-[#e3eefb]/50" : ""}`}
-                  >
-                    <td className="px-5 py-2.5">
-                      <span className="font-display mr-2 inline-block w-12 text-base font-bold">{s.code}</span>
-                      <span className="text-ink-2">{s.name}</span>
-                    </td>
-                    <td className="num px-2 text-right">{s.attempts || "-"}</td>
-                    <td className="num px-2 text-right font-semibold">{s.latest ?? "-"}{s.latest != null && max ? <span className="font-normal text-muted">/{max}</span> : ""}</td>
-                    <td className="px-2 text-ink-2">{s.latestLevel ?? "-"}</td>
-                    <td className="num px-2 text-right">{s.best ?? "-"}</td>
-                    <td className="num px-2 text-right text-ink-2">{s.direction === "low" ? "≤" : "≥"}{s.target}</td>
-                    <td className="px-2">
-                      {s.passRate == null ? (
-                        <span className="text-muted">-</span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <span className="h-1.5 w-16 overflow-hidden rounded-full bg-line">
-                            <span className="block h-full rounded-full bg-series-1" style={{ width: `${s.passRate * 100}%` }} />
-                          </span>
-                          <span className="num text-xs">{pct(s.passRate)}</span>
+              {drillStatsOnly.map((s) => (
+                <tr key={s.code} onClick={() => setDrill(s.code)} className={`cursor-pointer border-b border-line/70 transition hover:bg-card-2/60 ${selCode === s.code ? "bg-table/10" : ""}`}>
+                  <td className="px-5 py-2.5">
+                    <span className="font-display mr-2 inline-block w-12 text-base font-bold">{s.code}</span>
+                    <span className="text-ink-2">{s.name}</span>
+                  </td>
+                  <td className="num px-2 text-right">{s.attempts || "-"}</td>
+                  <td className="num px-2 text-right font-semibold">
+                    {s.latest ?? "-"}
+                    {s.latest != null && s.def.max ? <span className="font-normal text-muted">/{s.def.max}</span> : ""}
+                  </td>
+                  <td className="px-2 text-ink-2">{s.latestLevel ?? "-"}</td>
+                  <td className="num px-2 text-right">{s.best ?? "-"}</td>
+                  <td className="num px-2 text-right text-ink-2">{s.def.target == null ? "-" : `${s.def.direction === "low" ? "≤" : "≥"}${s.def.target}`}</td>
+                  <td className="px-2">
+                    {s.passRate == null ? (
+                      <span className="text-muted">-</span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span className="h-1.5 w-16 overflow-hidden rounded-full bg-card-3">
+                          <span className="block h-full rounded-full bg-series-1" style={{ width: `${s.passRate * 100}%` }} />
                         </span>
-                      )}
-                    </td>
-                    <td className="px-2">
-                      <Sparkline values={s.series.map((r) => r.score)} target={s.target} low={s.direction === "low"} />
-                    </td>
-                    <td className="px-5">
-                      {s.levelUp ? (
-                        <span className="rounded-full bg-good-soft px-2 py-1 text-xs font-semibold text-good">▲ Level up</span>
-                      ) : s.attempts ? (
-                        <span className="text-xs text-ink-2">Keep going</span>
-                      ) : (
-                        <span className="text-xs text-muted">Not tested</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                        <span className="num text-xs">{pct(s.passRate)}</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-2">
+                    <Sparkline values={s.series.map((r) => r.score)} target={s.def.target} low={s.def.direction === "low"} />
+                  </td>
+                  <td className="px-5">
+                    {s.levelUp ? (
+                      <span className="rounded-full bg-good-soft px-2 py-1 text-xs font-semibold text-good">▲ Level up</span>
+                    ) : s.attempts ? (
+                      <span className="text-xs text-ink-2">Keep going</span>
+                    ) : (
+                      <span className="text-xs text-muted">Not tested</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* Drill detail + HR */}
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="card p-5">
-          <Head title={`${sel.code} progress`} sub={`${DRILL_CARDS[sel.code.slice(0, 2)]?.title ?? sel.name} · ${TEST_BY_CODE[sel.code].counts}`} />
-          <Chips options={drillStatsOnly.map((s) => s.code)} value={drill} onChange={setDrill} />
-          <div className="mt-3">
-            <ScoreChart rows={sel.series} target={sel.target} max={TEST_BY_CODE[sel.code].max} low={sel.direction === "low"} />
-          </div>
-          {sel.attempts > 1 && sel.first != null && sel.latest != null && (
-            <p className="mt-2 text-sm text-ink-2">
-              From <b className="num">{sel.first}</b> on the first test to <b className="num">{sel.latest}</b> now
-              {sel.direction === "low" ? " (fewer is better)." : "."}
-            </p>
-          )}
-        </div>
-        <div className="card p-5">
-          <Head title="Heart rate" sub="Peak bpm logged after D1–D9 and W1–W3. Lower at the same work means better fitness." />
-          {hrWithData.length ? (
-            <>
-              <Chips options={hrWithData} value={activeHr!} onChange={setHrCode} />
-              <div className="mt-3">
-                <HrChart rows={hrRows} />
-              </div>
-              {hrDelta != null && (
-                <p className="mt-2 text-sm text-ink-2">
-                  {activeHr}: <b className="num">{hrRows[0].hr}</b> → <b className="num">{hrRows[hrRows.length - 1].hr}</b> bpm ({hrDelta > 0 ? "+" : ""}
-                  {hrDelta} bpm across {hrRows.length} readings).
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="mt-3 h-60">
-              <Empty text="Heart-rate readings will appear here once logged." />
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Weekly volume */}
-      <section className="card p-5">
-        <Head title="Weekly training volume" sub="Hours from completed steps, split into table work and physical work (warm-up, circuits, cooldown)." />
-        <div className="mt-3">
-          <VolumeChart rows={weeks} />
-        </div>
-        {weeks.length > 0 && (
-          <div className="mt-3 grid grid-cols-3 gap-3 text-center text-sm">
-            <Stat label="Avg hours / week" value={(weeks.reduce((a, w) => a + w.table + w.physical, 0) / weeks.length).toFixed(1)} />
-            <Stat label="Matches played" value={String(weeks.reduce((a, w) => a + w.matches, 0))} />
-            <Stat label="Avg journal days / week" value={(weeks.reduce((a, w) => a + w.journalDays, 0) / weeks.length).toFixed(1)} />
-          </div>
-        )}
-      </section>
-
       {/* Physical battery */}
       <section className="card p-5">
-        <Head title="Physical battery" sub="Retested at Day 1, Day 30 and every 6–8 weeks. Best of 2–3 trials." />
+        <Head title="Physical battery" sub="Retested every 6–8 weeks. Best of 2–3 trials." />
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {physStats.map((s) => {
-            const t = TEST_BY_CODE[s.code];
+            const t = s.def;
             const change = s.first != null && s.latest != null && s.attempts > 1 ? s.latest - s.first : null;
-            const better = change == null ? null : s.direction === "low" ? change < 0 : change > 0;
+            const better = change == null ? null : t.direction === "low" ? change < 0 : change > 0;
             return (
-              <div key={s.code} className="rounded-xl border border-line p-3">
+              <div key={s.code} className="rounded-xl border border-line bg-card-2/40 p-3">
                 <p className="text-xs font-semibold text-ink-2">{t.name}</p>
                 <p className="font-display num text-3xl font-bold">
                   {s.latest ?? "-"} <span className="font-sans text-xs font-normal text-muted">{t.unit}</span>
                 </p>
                 <p className={`text-xs ${better == null ? "text-muted" : better ? "text-good" : "text-warn"}`}>
-                  {change == null ? (s.direction === "low" ? "Lower is better" : "Higher is better") : `${better ? "▲" : "▼"} ${Math.abs(+change.toFixed(2))} ${t.unit} since first test`}
+                  {change == null ? (t.direction === "low" ? "Lower is better" : "Higher is better") : `${better ? "▲" : "▼"} ${Math.abs(+change.toFixed(2))} ${t.unit} since first test`}
                 </p>
                 <div className="mt-2 h-[110px]">
                   <MiniLine rows={s.series} unit={t.unit} />
@@ -275,6 +398,20 @@ export default function Dashboard() {
   );
 }
 
+function HeroTile({ label, value, sub, bar }: { label: string; value: string; sub: string; bar?: number }) {
+  return (
+    <div className="rounded-2xl border border-white/5 bg-paper/40 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
+      <p className="font-display num text-3xl font-bold leading-tight">{value}</p>
+      <p className="truncate text-xs text-ink-2">{sub}</p>
+      {bar != null && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-card-3">
+          <div className="h-full rounded-full bg-ball" style={{ width: `${Math.min(1, bar) * 100}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
 function Head({ title, sub }: { title: string; sub?: string }) {
   return (
     <div>
@@ -294,7 +431,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub: string 
 }
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-paper p-3">
+    <div className="rounded-xl bg-card-2/60 p-3">
       <p className="font-display num text-2xl font-bold">{value}</p>
       <p className="text-xs text-muted">{label}</p>
     </div>
@@ -307,18 +444,22 @@ function Key({ cls, label }: { cls: string; label: string }) {
     </span>
   );
 }
-function Chips({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+function Chips({ options, value, onChange, dim, badge }: { options: string[]; value: string; onChange: (v: string) => void; dim?: (c: string) => boolean; badge?: (c: string) => number }) {
   return (
     <div className="mt-3 flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button
-          key={o}
-          onClick={() => onChange(o)}
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${value === o ? "bg-ink text-white" : "bg-paper text-ink-2 hover:bg-line"}`}
-        >
-          {o}
-        </button>
-      ))}
+      {options.map((o) => {
+        const b = badge?.(o) ?? 0;
+        return (
+          <button
+            key={o}
+            onClick={() => onChange(o)}
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${value === o ? "bg-ink text-paper" : "bg-card-2 text-ink-2 hover:bg-card-3"} ${dim?.(o) ? "opacity-50" : ""}`}
+          >
+            {o}
+            {b > 0 && <span className="ml-1 text-bad">▲{b}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }

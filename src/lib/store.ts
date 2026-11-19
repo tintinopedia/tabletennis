@@ -1,87 +1,113 @@
 "use client";
-import { collection, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
-import { fb, DEMO_MODE } from "./firebase";
+import { collection, deleteDoc, doc, onSnapshot, query, setDoc, where } from "firebase/firestore";
+import { fb } from "./firebase";
 import type { Level } from "./plan";
-import { demoSeed } from "./demo";
 
+/* ------------------------------ types ------------------------------ */
 export type ItemStatus = "done" | "skipped";
 export type TestEntry = { level: Level; score: number | null };
 export type SessionEntry = {
   day: number;
   status: "draft" | "complete";
   trainingDate: string;
-  items: Record<string, ItemStatus>; // key = item index in the plan day
-  tests: Record<string, TestEntry>; // key = tracker test code
-  hr: Record<string, number | null>; // key = drill code (D1..D9, W1..W3)
+  items: Record<string, ItemStatus>; // key = item index in the day
+  tests: Record<string, TestEntry>; // key = test code
+  hr: Record<string, number | null>; // key = drill code
   matches: number;
   notes: string;
   updatedAt?: number;
   completedAt?: number;
 };
 export type SessionMap = Record<number, SessionEntry>;
+export type VideoDoc = { id: string; url: string; youtubeId: string; title: string; recordedOn?: string; description?: string; published: boolean; order: number; createdAt: number };
+export type MantraPoint = { id: string; text: string };
+export type MantraSection = { id: string; title: string; hint?: string; points: MantraPoint[]; kind?: "element" | "info" };
+export type MantraDoc = { sections: MantraSection[]; updatedAt?: number };
+export type RecordingDoc = { id: string; createdAt: number; mime: string; duration: number; data: string };
 
-const LS_KEY = "ahaan-tt-demo-sessions-v1";
-const listeners = new Set<(m: SessionMap) => void>();
+export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra";
 
-function readLocal(): SessionMap {
+/* --------------------------- demo storage -------------------------- */
+const lsKey = (c: Coll) => `tintin-demo-${c}-v2`;
+const listeners: Record<string, Set<() => void>> = {};
+let seedFn: ((c: Coll) => Record<string, unknown> | null) | null = null;
+export function setDemoSeed(fn: (c: Coll) => Record<string, unknown> | null) {
+  seedFn = fn;
+}
+function readLocal(c: Coll): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(lsKey(c));
     if (raw) return JSON.parse(raw);
-    const seeded = demoSeed();
-    localStorage.setItem(LS_KEY, JSON.stringify(seeded));
+    const seeded = seedFn?.(c) ?? {};
+    localStorage.setItem(lsKey(c), JSON.stringify(seeded));
     return seeded;
   } catch {
-    return demoSeed();
+    return {};
   }
 }
-function writeLocal(m: SessionMap) {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(m));
-  } catch {}
-  listeners.forEach((l) => l(m));
+function writeLocal(c: Coll, m: Record<string, unknown>) {
+  localStorage.setItem(lsKey(c), JSON.stringify(m));
+  listeners[c]?.forEach((l) => l());
 }
 
-export function subscribeSessions(cb: (m: SessionMap) => void): () => void {
+/* ----------------------------- generic ----------------------------- */
+export function subscribe<T>(c: Coll, cb: (rows: (T & { id: string })[]) => void, opts: { publishedOnly?: boolean } = {}): () => void {
   const f = fb();
   if (!f) {
-    listeners.add(cb);
-    cb(readLocal());
-    return () => listeners.delete(cb);
+    const emit = () => {
+      let rows = Object.entries(readLocal(c)).map(([id, v]) => ({ ...(v as T), id }));
+      if (opts.publishedOnly) rows = rows.filter((r) => (r as unknown as VideoDoc).published);
+      cb(rows);
+    };
+    (listeners[c] ??= new Set()).add(emit);
+    emit();
+    return () => {
+      listeners[c].delete(emit);
+    };
   }
+  const ref = opts.publishedOnly ? query(collection(f.db, c), where("published", "==", true)) : collection(f.db, c);
   return onSnapshot(
-    collection(f.db, "sessions"),
-    (snap) => {
-      const m: SessionMap = {};
-      snap.forEach((d) => {
-        const v = d.data() as Omit<SessionEntry, "updatedAt"> & { updatedAt?: { toMillis?: () => number } };
-        m[v.day] = { ...v, updatedAt: v.updatedAt?.toMillis?.() };
-      });
-      cb(m);
-    },
+    ref,
+    (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as T), id: d.id }))),
     (err) => {
-      console.error("sessions listener", err);
-      cb({});
+      console.warn(`${c} listener`, err.code);
+      cb([]);
     }
   );
 }
 
-export async function saveSession(entry: SessionEntry): Promise<void> {
+export async function put(c: Coll, id: string, data: object): Promise<void> {
+  // never store the synthetic id field
+  const { id: _omit, ...clean } = data as { id?: string };
+  void _omit;
   const f = fb();
   if (!f) {
-    const m = { ...readLocal(), [entry.day]: { ...entry, updatedAt: Date.now() } };
-    writeLocal(m);
+    writeLocal(c, { ...readLocal(c), [id]: clean });
     return;
   }
-  await setDoc(doc(f.db, "sessions", String(entry.day)), { ...entry, updatedAt: serverTimestamp() });
+  await setDoc(doc(f.db, c, id), clean);
 }
 
-export function resetDemo() {
-  if (!DEMO_MODE) return;
-  localStorage.removeItem(LS_KEY);
-  writeLocal(readLocal());
+export async function remove(c: Coll, id: string): Promise<void> {
+  const f = fb();
+  if (!f) {
+    const m = { ...readLocal(c) };
+    delete m[id];
+    writeLocal(c, m);
+    return;
+  }
+  await deleteDoc(doc(f.db, c, id));
 }
-export function clearDemo() {
-  if (!DEMO_MODE) return;
-  writeLocal({});
+
+export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+/* ---------------------------- sessions ----------------------------- */
+export function subscribeSessions(cb: (m: SessionMap) => void) {
+  return subscribe<SessionEntry>("sessions", (rows) => {
+    const m: SessionMap = {};
+    rows.forEach((r) => (m[r.day] = r));
+    cb(m);
+  });
 }
+export const saveSession = (e: SessionEntry) => put("sessions", String(e.day), { ...e, updatedAt: Date.now() });

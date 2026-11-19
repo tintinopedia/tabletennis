@@ -1,53 +1,47 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { useSessions } from "@/components/useSessions";
+import { Gate } from "@/components/Gate";
+import { useData } from "@/components/DataProvider";
 import { ItemPanel } from "@/components/ItemPanel";
-import { DAYS, TOTAL_DAYS, testsForItem, hasHeartRate, type Level, type PlanDay } from "@/lib/plan";
+import type { Catalog, Day, Level } from "@/lib/plan";
 import { currentDay, fmtDate, todayIso } from "@/lib/analytics";
-import { saveSession, type SessionEntry, type SessionMap, type ItemStatus } from "@/lib/store";
+import { saveSession, type SessionEntry, type ItemStatus } from "@/lib/store";
 
 export default function TrainPage() {
-  const { user, loading, signIn } = useAuth();
-  const sessions = useSessions();
-  if (loading || (user && !sessions)) return <p className="py-20 text-center text-muted">Loading…</p>;
-  if (!user)
-    return (
-      <div className="card mx-auto mt-16 max-w-md p-8 text-center">
-        <p className="font-display text-3xl font-bold uppercase">Training log</p>
-        <p className="mt-2 text-sm text-ink-2">Only Ahaan can sign in here to log his sessions.</p>
-        <button onClick={signIn} className="mt-6 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-table-deep">
-          Login with Google
-        </button>
-      </div>
-    );
-  return <Trainer sessions={sessions!} />;
+  return (
+    <Gate title="Training log">
+      <Trainer />
+    </Gate>
+  );
 }
 
 const blank = (day: number): SessionEntry => ({ day, status: "draft", trainingDate: "", items: {}, tests: {}, hr: {}, matches: 0, notes: "" });
 const MATCH_RE = /match|sparring|tournament|tune-up/i;
 
-function missingFor(e: SessionEntry, plan: PlanDay, prevDate?: string, nextDate?: string): string[] {
+function missingFor(e: SessionEntry, day: Day, cat: Catalog, prevDate?: string, nextDate?: string): string[] {
   const out: string[] = [];
   if (!e.trainingDate) out.push("Training date");
   else {
     if (e.trainingDate > todayIso()) out.push("Training date cannot be in the future");
-    if (prevDate && e.trainingDate < prevDate) out.push(`Training date must be on or after Day ${plan.day - 1} (${fmtDate(prevDate)})`);
-    if (nextDate && e.trainingDate > nextDate) out.push(`Training date must be on or before Day ${plan.day + 1} (${fmtDate(nextDate)})`);
+    if (prevDate && e.trainingDate < prevDate) out.push(`Training date must be on or after Day ${day.day - 1} (${fmtDate(prevDate)})`);
+    if (nextDate && e.trainingDate > nextDate) out.push(`Training date must be on or before Day ${day.day + 1} (${fmtDate(nextDate)})`);
   }
-  plan.items.forEach((it, i) => {
+  day.items.forEach((it, i) => {
     const s = e.items[String(i)];
     if (!s) out.push(`Mark ${it.code} as Done or Skipped`);
-    else if (s === "done") for (const t of testsForItem(it.code)) if (e.tests[t]?.score == null) out.push(`${t} score`);
+    else if (s === "done") for (const t of cat[it.code]?.tests ?? []) if (e.tests[t.code]?.score == null) out.push(`${t.code} score`);
   });
   return out;
 }
 
-function Trainer({ sessions }: { sessions: SessionMap }) {
-  const cur = currentDay(sessions);
-  const allDone = cur > TOTAL_DAYS;
-  const [viewDay, setViewDay] = useState(Math.min(cur, TOTAL_DAYS));
-  const plan = DAYS[viewDay - 1];
+function Trainer() {
+  const { sessions, days, catalog } = useData();
+  const total = days.length;
+  const cur = currentDay(sessions, days);
+  const allDone = cur > total;
+  const [viewDay, setViewDay] = useState(Math.max(1, Math.min(cur, total)));
+  const day = days[viewDay - 1];
   const saved = sessions[viewDay];
   const isComplete = saved?.status === "complete";
   const locked = viewDay > cur;
@@ -61,7 +55,6 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
 
-  // load entry when switching days, or when remote data changes and nothing is being edited
   useEffect(() => {
     setEntry(sessions[viewDay] ?? blank(viewDay));
     setDirty(false);
@@ -90,7 +83,6 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
     setSaving("idle");
   };
 
-  // autosave drafts for the current (not yet submitted) session
   useEffect(() => {
     if (!dirty || isComplete || locked) return;
     const t = setTimeout(async () => {
@@ -109,8 +101,20 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
 
   const prevDate = sessions[viewDay - 1]?.trainingDate;
   const nextDate = sessions[viewDay + 1]?.status === "complete" ? sessions[viewDay + 1]?.trainingDate : undefined;
-  const missing = useMemo(() => missingFor(entry, plan, prevDate, nextDate), [entry, plan, prevDate, nextDate]);
-  const doneCount = plan.items.filter((_, i) => entry.items[String(i)]).length;
+  const missing = useMemo(() => (day ? missingFor(entry, day, catalog, prevDate, nextDate) : []), [entry, day, catalog, prevDate, nextDate]);
+
+  if (!day)
+    return (
+      <div className="card mx-auto mt-10 max-w-lg p-8 text-center">
+        <p className="font-display text-3xl font-bold uppercase">No sessions planned</p>
+        <p className="mt-2 text-sm text-ink-2">Plan the next sessions in Studio.</p>
+        <Link href="/studio" className="btn btn-primary mt-5 inline-block">
+          Open Studio
+        </Link>
+      </div>
+    );
+
+  const doneCount = day.items.filter((_, i) => entry.items[String(i)]).length;
 
   const submit = async () => {
     if (missing.length) {
@@ -122,11 +126,11 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
       await saveSession({ ...entry, status: "complete", completedAt: entry.completedAt ?? Date.now() });
       setDirty(false);
       setSaving("saved");
-      if (isCurrent && viewDay < TOTAL_DAYS) {
+      if (isCurrent && viewDay < total) {
         setToast(`Day ${viewDay} saved. Great work! Next up: Day ${viewDay + 1}.`);
         setViewDay(viewDay + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
-      } else setToast(`Day ${viewDay} updated.`);
+      } else setToast(isCurrent ? `Day ${viewDay} saved. Plan more sessions in Studio.` : `Day ${viewDay} updated.`);
       setTimeout(() => setToast(null), 4000);
     } catch (err) {
       console.error(err);
@@ -134,131 +138,129 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
     }
   };
 
+  const markDone = (e: SessionEntry, i: number) => ({ ...e.items, [String(i)]: e.items[String(i)] ?? ("done" as ItemStatus) });
   const setStatus = (i: number, code: string, s: ItemStatus) =>
     update((e) => {
       e.items[String(i)] = s;
-      const tests = testsForItem(code);
+      const tdefs = catalog[code]?.tests ?? [];
       if (s === "done") {
-        for (const t of tests) e.tests[t] ??= { level: defaultLevel(t), score: null };
+        for (const t of tdefs) e.tests[t.code] ??= { level: defaultLevel(t.code), score: null };
       } else {
-        const stillUsed = new Set(plan.items.flatMap((it, j) => (j !== i && e.items[String(j)] === "done" ? testsForItem(it.code) : [])));
-        for (const t of tests) if (!stillUsed.has(t)) delete e.tests[t];
-        if (hasHeartRate(code)) delete e.hr[code];
+        const stillUsed = new Set(day.items.flatMap((it, j) => (j !== i && e.items[String(j)] === "done" ? (catalog[it.code]?.tests ?? []).map((t) => t.code) : [])));
+        for (const t of tdefs) if (!stillUsed.has(t.code)) delete e.tests[t.code];
+        delete e.hr[code];
       }
       return e;
     });
 
   const statusLabel = isComplete ? "Completed" : locked ? "Locked" : "In progress";
-  const progress = (Math.min(cur, TOTAL_DAYS + 1) - 1) / TOTAL_DAYS;
+  const progress = Math.min(cur - 1, total) / Math.max(total, 1);
 
   return (
     <div className="pt-6">
       {toast && (
-        <div className="fixed inset-x-0 top-20 z-40 mx-auto w-fit rounded-full bg-good px-5 py-2.5 text-sm font-semibold text-white shadow-lg" role="status">
+        <div className="fixed inset-x-0 top-20 z-40 mx-auto w-fit rounded-full bg-good px-5 py-2.5 text-sm font-semibold text-paper shadow-lg" role="status">
           {toast}
         </div>
       )}
 
-      {/* Day navigator */}
       <div className="card flex flex-wrap items-center gap-3 p-3">
-        <button
-          onClick={() => setViewDay(Math.max(1, viewDay - 1))}
-          disabled={viewDay === 1}
-          className="rounded-full border border-line px-3 py-2 text-sm font-medium disabled:opacity-40"
-          aria-label="Previous session"
-        >
+        <button onClick={() => setViewDay(Math.max(1, viewDay - 1))} disabled={viewDay === 1} className="btn btn-ghost" aria-label="Previous session">
           ‹ Prev
         </button>
-        <select
-          value={viewDay}
-          onChange={(e) => setViewDay(Number(e.target.value))}
-          className="min-w-0 flex-1 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium"
-          aria-label="Jump to session"
-        >
-          {DAYS.map((d) => {
+        <select value={viewDay} onChange={(e) => setViewDay(Number(e.target.value))} className="field min-w-0 flex-1 px-3 py-2 text-sm font-medium" aria-label="Jump to session">
+          {days.map((d) => {
             const st = sessions[d.day]?.status === "complete" ? "✓" : d.day === cur ? "●" : d.day > cur ? "🔒" : "";
             return (
               <option key={d.day} value={d.day}>
-                {st} Day {d.day} · {fmtDate(d.plannedDate, { weekday: "short", day: "numeric", month: "short" })} · {d.sessionType}
+                {st} Day {d.day}
+                {d.plannedDate ? ` · ${fmtDate(d.plannedDate, { weekday: "short", day: "numeric", month: "short" })}` : ""} · {d.sessionType}
               </option>
             );
           })}
         </select>
-        <button
-          onClick={() => setViewDay(Math.min(TOTAL_DAYS, viewDay + 1))}
-          disabled={viewDay === TOTAL_DAYS}
-          className="rounded-full border border-line px-3 py-2 text-sm font-medium disabled:opacity-40"
-          aria-label="Next session"
-        >
+        <button onClick={() => setViewDay(Math.min(total, viewDay + 1))} disabled={viewDay === total} className="btn btn-ghost" aria-label="Next session">
           Next ›
         </button>
         {!isCurrent && !allDone && (
-          <button onClick={() => setViewDay(cur)} className="rounded-full bg-table px-3 py-2 text-sm font-semibold text-white">
+          <button onClick={() => setViewDay(cur)} className="btn bg-table text-white">
             Go to Day {cur}
           </button>
         )}
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-line" aria-label={`${Math.round(progress * 100)}% of the plan complete`}>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-line" aria-label={`${Math.round(progress * 100)}% of planned sessions complete`}>
           <div className="h-full rounded-full bg-table" style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
 
       {locked && (
         <div className="mt-4 rounded-xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
-          🔒 Preview only. Finish <button className="font-semibold underline" onClick={() => setViewDay(cur)}>Day {cur}</button> first to unlock the next session.
+          🔒 Preview only. Finish{" "}
+          <button className="font-semibold underline" onClick={() => setViewDay(cur)}>
+            Day {cur}
+          </button>{" "}
+          first to unlock the next session.
         </div>
       )}
       {allDone && (
-        <div className="mt-4 rounded-xl bg-good-soft p-3 text-sm text-good">All {TOTAL_DAYS} sessions are logged. What a season! 🏓</div>
+        <div className="mt-4 rounded-xl border border-good/30 bg-good-soft p-3 text-sm text-good">
+          All {total} planned sessions are logged. 🏓{" "}
+          <Link href="/studio" className="font-semibold underline">
+            Plan the next sessions in Studio
+          </Link>
+          .
+        </div>
       )}
 
-      {/* Session header */}
-      <div className="court-bg mt-4 overflow-hidden rounded-2xl p-5 text-white sm:p-6">
+      <div className="court-bg mt-4 overflow-hidden rounded-2xl p-5 sm:p-6">
         <div className="flex flex-wrap items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-              {plan.phase} · {plan.week}
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-2">
+              {day.phase}
+              {day.week ? ` · ${day.week}` : ""}
             </p>
-            <h1 className="font-display mt-1 text-4xl font-bold uppercase leading-none sm:text-5xl">Day {plan.day}</h1>
-            <p className="mt-1 text-lg font-medium">{plan.sessionType}</p>
+            <h1 className="font-display mt-1 text-4xl font-bold uppercase leading-none sm:text-5xl">Day {day.day}</h1>
+            <p className="mt-1 text-lg font-medium">{day.sessionType}</p>
           </div>
           <div className="text-right">
-            <span
-              className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
-                isComplete ? "bg-good text-white" : locked ? "bg-white/20" : "bg-ball text-white"
-              }`}
-            >
+            <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${isComplete ? "bg-good text-paper" : locked ? "bg-card-3 text-ink-2" : "bg-ball text-white"}`}>
               {statusLabel}
             </span>
-            <p className="num mt-2 text-sm text-white/80">{plan.duration ? `${plan.duration} min planned` : "Rest day"}</p>
-            <p className="text-xs text-white/60">Plan date: {fmtDate(plan.plannedDate, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</p>
+            <p className="num mt-2 text-sm text-ink-2">{day.duration ? `${day.duration} min planned` : "Rest day"}</p>
+            {day.plannedDate && <p className="text-xs text-muted">Plan date: {fmtDate(day.plannedDate, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</p>}
           </div>
         </div>
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div className="rounded-xl bg-white/10 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Warm-up</p>
-            <p>{plan.warmup}</p>
+        {(day.warmup || day.cooldown) && (
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            {day.warmup && (
+              <div className="rounded-xl bg-paper/40 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Warm-up</p>
+                <p>{day.warmup}</p>
+              </div>
+            )}
+            {day.cooldown && (
+              <div className="rounded-xl bg-paper/40 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Cooldown and mental</p>
+                <p>{day.cooldown}</p>
+              </div>
+            )}
           </div>
-          <div className="rounded-xl bg-white/10 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Cooldown and mental</p>
-            <p>{plan.cooldown}</p>
-          </div>
+        )}
+      </div>
+
+      {day.main.length > 0 && (
+        <div className="card mt-4 p-4">
+          <p className="eyebrow mb-2">{day.custom ? "Session notes" : "Main session"}</p>
+          <ul className="space-y-1.5 text-sm">
+            {day.main.map((m) => (
+              <li key={m} className="flex gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ball" />
+                <span className="whitespace-pre-line text-ink-2">{m}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
+      )}
 
-      {/* Main plan */}
-      <div className="card mt-4 p-4">
-        <p className="eyebrow mb-2">Main session</p>
-        <ul className="space-y-1.5 text-sm">
-          {plan.main.map((m) => (
-            <li key={m} className="flex gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ball" />
-              <span className="whitespace-pre-line">{m}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Date */}
       <div className="card mt-4 flex flex-wrap items-center gap-3 p-4">
         <div className="flex-1">
           <p className="font-semibold">Training date</p>
@@ -271,30 +273,30 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
           min={prevDate}
           disabled={locked}
           onChange={(e) => update((x) => ({ ...x, trainingDate: e.target.value }))}
-          className="rounded-lg border border-line bg-white px-3 py-2 text-sm"
+          className="field px-3 py-2 text-sm"
           aria-label="Training date"
         />
         {!locked && (
-          <button onClick={() => update((x) => ({ ...x, trainingDate: todayIso() }))} className="rounded-full border border-line px-3 py-2 text-sm font-medium hover:bg-paper">
+          <button onClick={() => update((x) => ({ ...x, trainingDate: todayIso() }))} className="btn btn-ghost">
             Today
           </button>
         )}
       </div>
 
-      {/* Steps */}
       <div className="mt-6 flex items-baseline justify-between">
         <h2 className="font-display text-2xl font-bold uppercase">Step-by-step drills</h2>
         <p className="num text-sm text-muted">
-          {doneCount}/{plan.items.length} marked
+          {doneCount}/{day.items.length} marked
         </p>
       </div>
       <div className="mt-3 space-y-3">
-        {plan.items.map((it, i) => (
+        {day.items.map((it, i) => (
           <ItemPanel
-            key={`${plan.day}-${i}`}
-            plan={plan}
+            key={`${day.day}-${i}`}
+            day={day}
             item={it}
             index={i}
+            def={catalog[it.code]}
             status={entry.items[String(i)]}
             tests={entry.tests}
             hr={entry.hr[it.code]}
@@ -302,28 +304,27 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
             defaultLevel={defaultLevel}
             defaultOpen={!isComplete && i === 0}
             onStatus={(s) => setStatus(i, it.code, s)}
-            onTest={(c, t) => update((e) => ({ ...e, tests: { ...e.tests, [c]: t } }))}
-            onHr={(v) => update((e) => ({ ...e, hr: { ...e.hr, [it.code]: v } }))}
+            onTest={(c, t) => update((e) => ({ ...e, items: markDone(e, i), tests: { ...e.tests, [c]: t } }))}
+            onHr={(v) => update((e) => ({ ...e, items: markDone(e, i), hr: { ...e.hr, [it.code]: v } }))}
           />
         ))}
       </div>
 
-      {/* Extras */}
-      <div className={`card mt-4 grid gap-4 p-4 ${MATCH_RE.test(plan.sessionType) ? "sm:grid-cols-[200px_1fr]" : ""}`}>
-        {MATCH_RE.test(plan.sessionType) ? (
+      <div className={`card mt-4 grid gap-4 p-4 ${MATCH_RE.test(day.sessionType) ? "sm:grid-cols-[200px_1fr]" : ""}`}>
+        {MATCH_RE.test(day.sessionType) && (
           <label className="block">
             <span className="text-sm font-semibold">Matches played</span>
             <input
               type="number"
               min={0}
-              max={20}
+              max={30}
               disabled={locked}
               value={entry.matches || 0}
               onChange={(e) => update((x) => ({ ...x, matches: Math.max(0, Number(e.target.value) || 0) }))}
-              className="num mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm"
+              className="field num mt-1 w-full px-3 py-2 text-sm"
             />
           </label>
-        ) : null}
+        )}
         <label className="block">
           <span className="text-sm font-semibold">Notes</span> <span className="text-xs text-muted">(optional)</span>
           <textarea
@@ -332,33 +333,33 @@ function Trainer({ sessions }: { sessions: SessionMap }) {
             value={entry.notes}
             onChange={(e) => update((x) => ({ ...x, notes: e.target.value }))}
             placeholder="How did it feel? What will you fix next time?"
-            className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm"
+            className="field mt-1 w-full px-3 py-2 text-sm"
           />
         </label>
       </div>
 
-      {/* Submit */}
       {!locked && (
         <div className="sticky bottom-3 z-20 mt-6">
-          <div className="card flex flex-wrap items-center gap-3 p-3 shadow-lg">
+          <div className="card flex flex-wrap items-center gap-3 p-3 shadow-2xl shadow-black/50">
             <div className="min-w-0 flex-1 text-sm">
               {missing.length === 0 ? (
                 <span className="font-medium text-good">Everything filled in. Ready to {isComplete ? "save" : "submit"}.</span>
               ) : (
                 <span className="text-ink-2">
                   {missing.length} thing{missing.length > 1 ? "s" : ""} left to fill
-                  {showMissing && <span className="mt-1 block text-xs text-warn">{missing.slice(0, 6).join(" · ")}{missing.length > 6 ? " …" : ""}</span>}
+                  {showMissing && (
+                    <span className="mt-1 block text-xs text-warn">
+                      {missing.slice(0, 6).join(" · ")}
+                      {missing.length > 6 ? " …" : ""}
+                    </span>
+                  )}
                 </span>
               )}
               <span className="block text-xs text-muted">
                 {saving === "saving" ? "Saving…" : saving === "error" ? "Could not save. Check your connection." : !isComplete && saving === "saved" ? "Draft saved" : isComplete && dirty ? "Unsaved changes" : ""}
               </span>
             </div>
-            <button
-              onClick={submit}
-              disabled={saving === "saving" || (isComplete && !dirty)}
-              className={`rounded-full px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${missing.length ? "bg-ink-2" : "bg-ball hover:brightness-95"}`}
-            >
+            <button onClick={submit} disabled={saving === "saving" || (isComplete && !dirty)} className={`btn ${missing.length ? "bg-card-3 text-ink" : "btn-primary"}`}>
               {isComplete ? "Save changes" : `Submit Day ${viewDay}`}
             </button>
           </div>

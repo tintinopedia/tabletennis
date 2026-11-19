@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Only Ahaan's Google account can write.
+    // Only Tintin's Google account (ahaan@tintinopedia.com) can write.
     function isAhaan() {
       return request.auth != null
         && request.auth.token.email == 'ahaan@tintinopedia.com'
@@ -14,25 +14,59 @@ service cloud.firestore {
         || get(/databases/$(database)/documents/sessions/$(string(day - 1))).data.status == 'complete';
     }
 
-    match /sessions/{dayId} {
-      // The dashboard is public.
-      allow read: if true;
+    // Season 1 has 164 built-in days; later days must be planned in customDays first.
+    function dayExists(day) {
+      return day <= 164 || exists(/databases/$(database)/documents/customDays/$(string(day)));
+    }
 
-      // Sessions must be filled in order: day N needs day N-1 to be complete.
+    // Logged sessions: public read, written in order.
+    match /sessions/{dayId} {
+      allow read: if true;
       allow create: if isAhaan()
         && request.resource.data.day == int(dayId)
-        && int(dayId) >= 1 && int(dayId) <= 164
+        && int(dayId) >= 1
+        && dayExists(int(dayId))
         && request.resource.data.status in ['draft', 'complete']
         && prevComplete(int(dayId));
-
-      // Editing is allowed; a submitted session can never go back to draft.
       allow update: if isAhaan()
         && request.resource.data.day == resource.data.day
         && request.resource.data.status in ['draft', 'complete']
         && (resource.data.status != 'complete' || request.resource.data.status == 'complete')
         && prevComplete(int(dayId));
-
       allow delete: if false;
+    }
+
+    // Sessions planned in Studio after Day 164.
+    match /customDays/{dayId} {
+      allow read: if true;
+      allow create, update: if isAhaan()
+        && int(dayId) > 164
+        && request.resource.data.day == int(dayId)
+        && (int(dayId) == 165 || exists(/databases/$(database)/documents/customDays/$(string(int(dayId) - 1))));
+      allow delete: if isAhaan()
+        && !exists(/databases/$(database)/documents/sessions/$(dayId));
+    }
+
+    // Drill library (custom codes and edits to built-in ones).
+    match /codes/{code} {
+      allow read: if true;
+      allow write: if isAhaan();
+    }
+
+    // My Videos: the public sees published videos only.
+    match /videos/{id} {
+      allow read: if resource.data.published == true || isAhaan();
+      allow write: if isAhaan();
+    }
+
+    // Mantra text and voice recordings are private to Tintin's account.
+    match /mantra/{id} {
+      allow read, write: if isAhaan();
+    }
+    match /recordings/{id} {
+      allow read, delete: if isAhaan();
+      allow create: if isAhaan() && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
+      allow update: if false;
     }
 
     match /{document=**} {

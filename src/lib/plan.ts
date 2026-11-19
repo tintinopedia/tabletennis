@@ -1,6 +1,8 @@
 import planData from "@/data/plan.json";
-import { VIDEO_OVERRIDES } from "@/data/videos";
 
+/* ------------------------------------------------------------------ */
+/* Built-in Season 1 plan (Ahaan-Table-Tennis-Training-Plan xlsx)      */
+/* ------------------------------------------------------------------ */
 export type PlanItem = { code: string; label: string; refs: string; minutes: number };
 export type PlanVideo = { code: string; label: string; url: string };
 export type PlanDay = {
@@ -19,77 +21,91 @@ export type PlanDay = {
 };
 export type DrillCard = { title: string; fields: { k: string; v: string }[] };
 
-export const DAYS: PlanDay[] = (planData as { days: PlanDay[] }).days;
+export const PLAN_DAYS: PlanDay[] = (planData as { days: PlanDay[] }).days;
 export const DRILL_CARDS: Record<string, DrillCard> = (planData as { drills: Record<string, DrillCard> }).drills;
-export const TOTAL_DAYS = DAYS.length;
-export const TOURNAMENT_DATE = "2027-05-15";
+export const PLAN_LENGTH = PLAN_DAYS.length;
 
 export const LEVELS = ["Foundation", "Competitor", "Advanced"] as const;
 export type Level = (typeof LEVELS)[number];
 
-/** Mirrors the "Codes" sheet of Progress-Tracker-v1.0.xlsx */
-export type TestCode = {
+/* ------------------------------------------------------------------ */
+/* Catalog model: every code (built-in or custom) the planner can use */
+/* ------------------------------------------------------------------ */
+export const SECTIONS = ["Warm-up", "Table drills", "Physical", "Cooldown", "Mental", "Other"] as const;
+export type Section = (typeof SECTIONS)[number];
+export type Kind = "table" | "physical" | "mental";
+export type Step = { k: string; v: string };
+export type VideoRef = { label: string; url: string };
+export type TestDef = {
   code: string;
   name: string;
   counts: string;
   target: number | null;
   direction: "high" | "low";
-  max?: number;
+  max?: number | null;
   step?: number;
   unit?: string;
+  levels: boolean;
 };
-export const TEST_CODES: TestCode[] = [
-  { code: "D1-FH", name: "Slide-ball topspin, forehand", counts: "10 rolled balls: clean deep topspins", target: 8, direction: "high", max: 10 },
-  { code: "D1-BH", name: "Slide-ball topspin, backhand", counts: "10 rolled balls: clean deep topspins", target: 8, direction: "high", max: 10 },
-  { code: "D2", name: "BH flick + long BH topspin", counts: "5 pairs: both shots land", target: 4, direction: "high", max: 5 },
-  { code: "D3", name: "FH flick + long FH topspin", counts: "5 pairs: both shots land", target: 4, direction: "high", max: 5 },
-  { code: "D4", name: "Three-point backhand", counts: "9 balls in sequence, on with real spin", target: 8, direction: "high", max: 9 },
-  { code: "D5", name: "Three-point forehand", counts: "9 balls in sequence", target: 8, direction: "high", max: 9 },
-  { code: "D6", name: "The Falkenberg", counts: "9 balls, clean", target: 8, direction: "high", max: 9 },
-  { code: "D7", name: "Random-placement multiball", counts: "Unforced errors in a 60-s series (lower = better)", target: 3, direction: "low", max: 30 },
-  { code: "D8-A", name: "Combination A (serve+3rd, short to FH)", counts: "10 serves: attacks launched as planned", target: 10, direction: "high", max: 10 },
-  { code: "D8-B", name: "Combination B (serve+3rd, short to BH)", counts: "10 serves: attacks launched as planned", target: 10, direction: "high", max: 10 },
-  { code: "D9", name: "Short-short, open on long push", counts: "10 long pushes offered: openings launched", target: 8, direction: "high", max: 10 },
-  { code: "P-505", name: "5-0-5 change of direction", counts: "Time in seconds (lower = better)", target: null, direction: "low", step: 0.01, unit: "s" },
-  { code: "P-HEX", name: "Hexagon jump test", counts: "3 revolutions, seconds (lower = better)", target: null, direction: "low", step: 0.01, unit: "s" },
-  { code: "P-SLIDE", name: "3-m side-slide, 30 s", counts: "Count of line touches", target: null, direction: "high", step: 1, unit: "touches" },
-  { code: "P-SLJ", name: "Standing long jump", counts: "Distance in cm", target: null, direction: "high", step: 1, unit: "cm" },
-  { code: "P-CMJ", name: "Countermovement jump", counts: "Height in cm", target: null, direction: "high", step: 1, unit: "cm" },
-];
-export const TEST_BY_CODE = Object.fromEntries(TEST_CODES.map((t) => [t.code, t]));
-export const DRILL_TESTS = TEST_CODES.filter((t) => t.code.startsWith("D"));
-export const PHYSICAL_TESTS = TEST_CODES.filter((t) => t.code.startsWith("P-"));
-
-/** Which tracker tests a plan item produces */
-export function testsForItem(code: string): string[] {
-  if (code === "D1") return ["D1-FH", "D1-BH"];
-  if (code === "D8") return ["D8-A", "D8-B"];
-  if (code === "Physical Battery") return PHYSICAL_TESTS.map((t) => t.code);
-  if (TEST_BY_CODE[code]) return [code];
-  return [];
-}
-
-/** D1 to D9 and W1 to W3 allow an optional heart-rate entry */
-export const HR_CODES = ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "W1", "W2", "W3"];
-export const hasHeartRate = (code: string) => HR_CODES.includes(code);
-
-export type Category = "table" | "physical" | "mental";
-export function categoryOf(code: string): Category {
-  if (/^M\d/.test(code)) return "mental";
-  if (code === "W0" || code === "C1" || /^P\d/.test(code) || code === "Physical Battery") return "physical";
-  return "table";
-}
-export const isJournalCode = (code: string) => /^M1/.test(code);
-
 export type Exhibit = { src: string; title: string };
+export type CodeDef = {
+  code: string;
+  name: string;
+  section: Section;
+  kind: Kind;
+  minutes: number;
+  hr: boolean;
+  steps: Step[];
+  videos: VideoRef[];
+  tests: TestDef[];
+  refs?: string;
+  exhibits: Exhibit[];
+  builtin: boolean;
+};
+/** What is stored in Firestore `codes/{code}`: a full custom code, or edits to a built-in */
+export type CodeDoc = Partial<Omit<CodeDef, "builtin" | "exhibits">> & { code: string; updatedAt?: number };
+export type Catalog = Record<string, CodeDef>;
+
+/** Mirrors the "Codes" sheet of Progress-Tracker-v1.0.xlsx */
+const T = (code: string, name: string, counts: string, target: number | null, direction: "high" | "low", extra: Partial<TestDef> = {}): TestDef => ({
+  code,
+  name,
+  counts,
+  target,
+  direction,
+  levels: !code.startsWith("P-"),
+  ...extra,
+});
+export const BUILTIN_TESTS: TestDef[] = [
+  T("D1-FH", "Slide-ball topspin, forehand", "10 rolled balls: clean deep topspins", 8, "high", { max: 10 }),
+  T("D1-BH", "Slide-ball topspin, backhand", "10 rolled balls: clean deep topspins", 8, "high", { max: 10 }),
+  T("D2", "BH flick + long BH topspin", "5 pairs: both shots land", 4, "high", { max: 5 }),
+  T("D3", "FH flick + long FH topspin", "5 pairs: both shots land", 4, "high", { max: 5 }),
+  T("D4", "Three-point backhand", "9 balls in sequence, on with real spin", 8, "high", { max: 9 }),
+  T("D5", "Three-point forehand", "9 balls in sequence", 8, "high", { max: 9 }),
+  T("D6", "The Falkenberg", "9 balls, clean", 8, "high", { max: 9 }),
+  T("D7", "Random-placement multiball", "Unforced errors in a 60-s series (lower = better)", 3, "low", { max: 30 }),
+  T("D8-A", "Combination A (serve + 3rd, short to FH)", "10 serves: attacks launched as planned", 10, "high", { max: 10 }),
+  T("D8-B", "Combination B (serve + 3rd, short to BH)", "10 serves: attacks launched as planned", 10, "high", { max: 10 }),
+  T("D9", "Short-short, open on long push", "10 long pushes offered: openings launched", 8, "high", { max: 10 }),
+  T("P-505", "5-0-5 change of direction", "Time in seconds (lower = better)", null, "low", { step: 0.01, unit: "s" }),
+  T("P-HEX", "Hexagon jump test", "3 revolutions, seconds (lower = better)", null, "low", { step: 0.01, unit: "s" }),
+  T("P-SLIDE", "3-m side-slide, 30 s", "Count of line touches", null, "high", { step: 1, unit: "touches" }),
+  T("P-SLJ", "Standing long jump", "Distance in cm", null, "high", { step: 1, unit: "cm" }),
+  T("P-CMJ", "Countermovement jump", "Height in cm", null, "high", { step: 1, unit: "cm" }),
+];
+const BT = Object.fromEntries(BUILTIN_TESTS.map((t) => [t.code, t]));
+function builtinTests(code: string): TestDef[] {
+  if (code === "D1") return [BT["D1-FH"], BT["D1-BH"]];
+  if (code === "D8") return [BT["D8-A"], BT["D8-B"]];
+  if (code === "Physical Battery") return BUILTIN_TESTS.filter((t) => t.code.startsWith("P-"));
+  return BT[code] ? [BT[code]] : [];
+}
+export const isPhysicalTest = (code: string) => code.startsWith("P-");
+
 const EX = (f: string, title: string): Exhibit => ({ src: `/exhibits/${f}.jpg`, title });
-export const EXHIBITS: Record<string, Exhibit[]> = {
-  W0: [
-    EX("w0-raise", "1. Raise (2 to 3 min)"),
-    EX("w0-activate", "2. Activate (2 to 3 min)"),
-    EX("w0-mobilize", "3. Mobilize (3 min, dynamic only)"),
-    EX("w0-potentiate", "4. Potentiate (2 min)"),
-  ],
+const EXHIBITS: Record<string, Exhibit[]> = {
+  W0: [EX("w0-raise", "1. Raise (2 to 3 min)"), EX("w0-activate", "2. Activate (2 to 3 min)"), EX("w0-mobilize", "3. Mobilize (3 min, dynamic only)"), EX("w0-potentiate", "4. Potentiate (2 min)")],
   C1: [EX("c1-pulse-down", "Step 1: Pulse-down walk and breathing"), EX("c1-stretches", "Step 2: Six held static stretches")],
   "Physical Battery": [EX("battery-agility", "Part 1: Agility and lateral footwork tests"), EX("battery-power", "Part 2: Explosive power tests")],
   P1: [EX("p1-p2", "P1 and P2 court-endurance circuits")],
@@ -100,8 +116,7 @@ export const EXHIBITS: Record<string, Exhibit[]> = {
   P6: [EX("p5-p6", "P5 med-ball power and P6 strength foundation")],
 };
 
-/** Step-by-step text for codes that are not on the Drill Cards */
-export const EXTRA_STEPS: Record<string, { k: string; v: string }[]> = {
+const EXTRA_STEPS: Record<string, Step[]> = {
   W0: [
     { k: "Raise", v: "2 to 3 min: jump rope, light jog or easy skips until warm and lightly sweating. Never tired." },
     { k: "Activate", v: "2 to 3 min: glute bridges x10, band pull-aparts x15, scapular push-ups x10, side plank 20 s per side." },
@@ -117,31 +132,196 @@ export const EXTRA_STEPS: Record<string, { k: string; v: string }[]> = {
     { k: "Agility", v: "5-0-5 (seconds, lower is better), Hexagon jump (seconds, lower is better), 3 m side-slide in 30 s (touches, higher is better)." },
     { k: "Power", v: "Standing long jump (cm, measure to the rear heel) and countermovement jump (cm, hands on hips)." },
   ],
-  "Serve Bucket": [
-    { k: "Method", v: "20-ball blocks per serve. Pick a target, serve the whole bucket, count how many land with the intended spin and placement." },
-  ],
+  "Serve Bucket": [{ k: "Method", v: "20-ball blocks per serve. Pick a target, serve the whole bucket, count how many land with the intended spin and placement." }],
+  "Match Analysis Sheet": [{ k: "After", v: "Fill in the Match Analysis Sheet for each match: what worked, what didn't, and one tactical change for next time." }],
   M1: [{ k: "Journal", v: "Training journal entry: Effort, Success, Progress (E-S-P) plus 2 targets for next session." }],
   M1a: [{ k: "Evening", v: "90-second evening review: one Effort, one Success, one Progress deposit." }],
   M1b: [{ k: "Post-session", v: "Write E-S-P for today plus 2 targets for the next session." }],
-  M2: [{ k: "Mantra", v: "Listen to (or record) your personal mantra audio." }],
+  M2: [{ k: "Mantra", v: "Listen to (or record) your personal mantra on the Mantra page." }],
   M3: [{ k: "Visualize", v: "5 min eyes-closed mental movie of Combinations A and B and a comeback from 5-8." }],
   M4: [{ k: "Reset", v: "Stop, Park, Replace: after every lost point, stop, park the mistake, replace it with the next plan." }],
   M5: [{ k: "Routine", v: "The fixed 25 min pre-match sequence: warm-up, mantra, visualization, banker serves." }],
 };
 
-const YT = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
-export function youtubeId(url: string): string | null {
-  const m = url.match(YT);
-  return m ? m[1] : null;
+const NAMES: Record<string, string> = {
+  W0: "Session Warm-Up (RAMP)",
+  W1: "Warm-Up: Backhand-Anchor Pattern",
+  W2: "Warm-Up: Forehand-Anchor Mirror",
+  W3: "Warm-Up: Counter-Topspin Drift",
+  C1: "Cooldown + Static Stretching",
+  M1: "Training Journal",
+  M1a: "Evening E-S-P Deposits",
+  M1b: "Post-Session Training Journal",
+  M2: "Personal Mantra",
+  M3: "Visualization",
+  M4: "Stop, Park, Replace",
+  M5: "Pre-Match Routine",
+  "Serve Bucket": "Serve Bucket (The Bucket Method)",
+  "Match Analysis Sheet": "Match Analysis Sheet & Tactics",
+  "Physical Battery": "Physical Testing Battery",
+};
+
+function sectionOf(code: string): Section {
+  if (/^W\d/.test(code)) return "Warm-up";
+  if (/^D\d/.test(code)) return "Table drills";
+  if (/^P\d/.test(code) || code === "Physical Battery") return "Physical";
+  if (/^C\d/.test(code)) return "Cooldown";
+  if (/^M\d/.test(code)) return "Mental";
+  return "Other";
 }
-export function videoUrl(v: PlanVideo): string {
-  const key = v.url.split("/tt/")[1] ?? v.code;
-  return VIDEO_OVERRIDES[key] || v.url;
+function kindOf(code: string): Kind {
+  if (/^M\d/.test(code)) return "mental";
+  if (code === "W0" || /^C\d/.test(code) || /^P\d/.test(code) || code === "Physical Battery") return "physical";
+  return "table";
+}
+const HR_DEFAULT = new Set(["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "W1", "W2", "W3"]);
+
+function buildBuiltinCatalog(): Catalog {
+  const cat: Catalog = {};
+  const minutes: Record<string, number[]> = {};
+  for (const d of PLAN_DAYS) {
+    for (const it of d.items) (minutes[it.code] ??= []).push(it.minutes);
+    for (const v of d.videos) {
+      const c = cat[v.code];
+      if (c && !c.videos.some((x) => x.url === v.url)) c.videos.push({ label: v.label, url: v.url });
+    }
+    for (const it of d.items) {
+      if (cat[it.code]) continue;
+      const card = DRILL_CARDS[it.code];
+      cat[it.code] = {
+        code: it.code,
+        name: card?.title ?? NAMES[it.code] ?? it.label.replace(/^[^(]*\(/, "").replace(/\)$/, ""),
+        section: sectionOf(it.code),
+        kind: kindOf(it.code),
+        minutes: it.minutes,
+        hr: HR_DEFAULT.has(it.code),
+        steps: card?.fields ?? EXTRA_STEPS[it.code] ?? [],
+        videos: d.videos.filter((v) => v.code === it.code).map((v) => ({ label: v.label, url: v.url })),
+        tests: builtinTests(it.code),
+        refs: it.refs,
+        exhibits: EXHIBITS[it.code] ?? [],
+        builtin: true,
+      };
+    }
+  }
+  // typical minutes = most common value in the plan
+  for (const [code, arr] of Object.entries(minutes)) {
+    const counts = new Map<number, number>();
+    arr.forEach((m) => counts.set(m, (counts.get(m) ?? 0) + 1));
+    cat[code].minutes = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }
+  return cat;
+}
+export const BUILTIN_CATALOG = buildBuiltinCatalog();
+
+export function mergeCatalog(docs: CodeDoc[]): Catalog {
+  const out: Catalog = {};
+  for (const [k, v] of Object.entries(BUILTIN_CATALOG)) out[k] = { ...v, videos: [...v.videos], steps: [...v.steps] };
+  for (const d of docs) {
+    const base = out[d.code];
+    if (base) {
+      // built-in: allow edits to presentation fields, never to scoring definitions
+      out[d.code] = {
+        ...base,
+        name: d.name ?? base.name,
+        section: d.section ?? base.section,
+        kind: d.kind ?? base.kind,
+        minutes: d.minutes ?? base.minutes,
+        hr: d.hr ?? base.hr,
+        steps: d.steps ?? base.steps,
+        videos: d.videos ?? base.videos,
+      };
+    } else {
+      out[d.code] = {
+        code: d.code,
+        name: d.name ?? d.code,
+        section: d.section ?? "Other",
+        kind: d.kind ?? "table",
+        minutes: d.minutes ?? 10,
+        hr: d.hr ?? false,
+        steps: d.steps ?? [],
+        videos: d.videos ?? [],
+        tests: (d.tests ?? []).map((t) => ({ ...t, code: d.code })),
+        exhibits: [],
+        builtin: false,
+      };
+    }
+  }
+  return out;
 }
 
-export function phaseList() {
+/** Index of every scored test in the catalog (tracker test code -> definition + owning drill code) */
+export function testIndex(cat: Catalog): Record<string, TestDef & { owner: string }> {
+  const out: Record<string, TestDef & { owner: string }> = {};
+  for (const c of Object.values(cat)) for (const t of c.tests) out[t.code] = { ...t, owner: c.code };
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Unified day model: built-in plan days + custom planned sessions    */
+/* ------------------------------------------------------------------ */
+export type DayItem = { code: string; minutes: number; hr: boolean; note?: string; refs?: string };
+export type Day = {
+  day: number;
+  plannedDate?: string;
+  phase: string;
+  week?: string;
+  sessionType: string;
+  duration: number;
+  warmup?: string;
+  cooldown?: string;
+  main: string[];
+  items: DayItem[];
+  custom: boolean;
+};
+export type CustomDayDoc = {
+  day: number;
+  plannedDate?: string;
+  sessionType: string;
+  main?: string[];
+  items: DayItem[];
+  createdAt?: number;
+};
+
+export function allDays(custom: CustomDayDoc[], cat: Catalog): Day[] {
+  const base: Day[] = PLAN_DAYS.map((d) => ({
+    day: d.day,
+    plannedDate: d.plannedDate,
+    phase: d.phase,
+    week: d.week,
+    sessionType: d.sessionType,
+    duration: d.duration,
+    warmup: d.warmup,
+    cooldown: d.cooldown,
+    main: d.main,
+    items: d.items.map((it) => ({ code: it.code, minutes: it.minutes, refs: it.refs, hr: cat[it.code]?.hr ?? false })),
+    custom: false,
+  }));
+  const extra = custom
+    .filter((c) => c.day > PLAN_LENGTH)
+    .sort((a, b) => a.day - b.day)
+    .map<Day>((c) => ({
+      day: c.day,
+      plannedDate: c.plannedDate || undefined,
+      phase: "Custom sessions",
+      sessionType: c.sessionType || "Training session",
+      duration: c.items.reduce((a, i) => a + (i.minutes || 0), 0),
+      main: c.main ?? [],
+      items: c.items,
+      custom: true,
+    }));
+  // keep numbering contiguous: stop at the first gap
+  const out = [...base];
+  for (const e of extra) {
+    if (e.day !== out.length + 1) break;
+    out.push(e);
+  }
+  return out;
+}
+
+export function phaseList(days: Day[]) {
   const out: { name: string; start: number; end: number }[] = [];
-  for (const d of DAYS) {
+  for (const d of days) {
     const last = out[out.length - 1];
     if (last && last.name === d.phase) last.end = d.day;
     else out.push({ name: d.phase, start: d.day, end: d.day });
@@ -149,4 +329,9 @@ export function phaseList() {
   return out;
 }
 
-export const isBreakDay = (d: PlanDay) => d.duration === 0;
+const YT = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([A-Za-z0-9_-]{11})/;
+export function youtubeId(url: string): string | null {
+  const m = (url || "").match(YT);
+  return m ? m[1] : null;
+}
+export const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
