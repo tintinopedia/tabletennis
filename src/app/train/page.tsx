@@ -53,6 +53,15 @@ function Trainer() {
   const [saveMsg, setSaveMsg] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
+  // heart rate handed over by the iPhone Shortcut: /train?hr=172 (optional &code=D4)
+  const [watch, setWatch] = useState<{ hr: number; code: string | null; applied: string | null } | null>(null);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has("hr")) return;
+    const hr = Math.round(Number(q.get("hr")));
+    window.history.replaceState(null, "", window.location.pathname);
+    setWatch(hr >= 40 && hr <= 240 ? { hr, code: q.get("code"), applied: null } : { hr: 0, code: null, applied: null });
+  }, []);
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
 
@@ -117,6 +126,16 @@ function Trainer() {
     );
 
   const doneCount = day.items.filter((_, i) => entry.items[String(i)]).length;
+  const hrItems = day.items.filter((it, i) => it.hr && entry.items[String(i)] !== "skipped");
+  const applyWatch = (code: string) => {
+    if (!watch) return;
+    update((e) => ({ ...e, hr: { ...e.hr, [code]: watch.hr } }));
+    setWatch({ ...watch, applied: code });
+  };
+  if (watch && watch.hr && watch.code && !watch.applied && !locked && hrItems.some((it) => it.code === watch.code)) {
+    // Shortcut named the drill: fill it straight away
+    queueMicrotask(() => applyWatch(watch.code!));
+  }
 
   const submit = async () => {
     if (missing.length) {
@@ -197,6 +216,42 @@ function Trainer() {
           <div className="h-full rounded-full bg-table" style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
+
+      {watch && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-critical/30 bg-bad-soft p-3 text-sm">
+          <span className="text-bad">⌚ ♥</span>
+          {!watch.hr ? (
+            <span className="flex-1 text-ink-2">No recent heart-rate reading came from the Watch. Start a workout on the Watch during training, then run the Shortcut again.</span>
+          ) : watch.applied ? (
+            <span className="flex-1">
+              Added <b className="num">{watch.hr} bpm</b> to <b>{watch.applied}</b>. Tap Done on that drill when you are ready.
+            </span>
+          ) : locked ? (
+            <span className="flex-1 text-ink-2">
+              Watch heart rate <b className="num text-ink">{watch.hr} bpm</b>. Go to Day {cur} to add it.
+            </span>
+          ) : hrItems.length === 0 ? (
+            <span className="flex-1 text-ink-2">
+              Watch heart rate <b className="num text-ink">{watch.hr} bpm</b>, but no drill in this session tracks heart rate.
+            </span>
+          ) : (
+            <>
+              <span className="text-ink">
+                Watch heart rate <b className="num">{watch.hr} bpm</b>. Add it to:
+              </span>
+              {hrItems.map((it) => (
+                <button key={it.code} onClick={() => applyWatch(it.code)} className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-paper hover:bg-ink-2">
+                  {it.code}
+                  {entry.hr[it.code] ? ` (now ${entry.hr[it.code]})` : ""}
+                </button>
+              ))}
+            </>
+          )}
+          <button onClick={() => setWatch(null)} className="ml-auto text-xs text-muted hover:text-ink" aria-label="Dismiss">
+            ✕
+          </button>
+        </div>
+      )}
 
       {locked && (
         <div className="mt-4 rounded-xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
