@@ -35,7 +35,7 @@ const emailsOf = (u: FbUser) => [u.email, ...u.providerData.map((p) => p.email)]
 
 function googleProvider() {
   const p = new GoogleAuthProvider();
-  p.setCustomParameters({ login_hint: ALLOWED_EMAIL, prompt: "select_account" });
+  p.setCustomParameters({ prompt: "select_account" });
   return p;
 }
 function githubProvider() {
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return onAuthStateChanged(f.auth, async (u) => {
       if (u && !emailsOf(u).includes(ALLOWED_EMAIL)) {
-        setError(`${u.email ?? "That account"} is not allowed. Only ${ALLOWED_EMAIL} can sign in.`);
+        setError(`${u.email ?? "That account"} is not allowed. Only Ahaan can sign in.`);
         await fbSignOut(f.auth);
         setUser(null);
       } else {

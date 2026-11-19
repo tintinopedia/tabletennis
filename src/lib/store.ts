@@ -25,7 +25,7 @@ export type MantraSection = { id: string; title: string; hint?: string; points: 
 export type MantraDoc = { sections: MantraSection[]; updatedAt?: number };
 export type RecordingDoc = { id: string; createdAt: number; mime: string; duration: number; data: string };
 
-export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra" | "images";
+export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra" | "images" | "posts";
 export type ImageDoc = { data: string; createdAt: number };
 
 /* --------------------------- demo storage -------------------------- */
@@ -130,7 +130,7 @@ export const saveSession = (e: SessionEntry) => put("sessions", String(e.day), {
 export function saveError(e: unknown): string {
   const code = (e as { code?: string })?.code ?? "";
   if (code.includes("permission-denied"))
-    return "Not allowed by the database rules. Publish the latest firestore.rules in Firebase (Firestore > Rules) and make sure you are signed in as ahaan@tintinopedia.com.";
+    return "Not allowed by the database rules. Publish the latest firestore.rules in Firebase (Firestore > Rules) and make sure you are signed in with Ahaan's account.";
   if (code.includes("not-found") || code.includes("failed-precondition")) return "The Firestore database was not found. Create it in Firebase (Firestore Database > Create database).";
   if (code.includes("unavailable")) return "Can't reach the database. Check your internet connection.";
   if (code.includes("invalid-argument") || code.includes("resource-exhausted")) return "The data is too large to save.";

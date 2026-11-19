@@ -123,3 +123,117 @@ select.field option {
 .recharts-wrapper *:focus {
   outline: none;
 }
+
+/* ---------- blog content (editor + reader) ---------- */
+.prose-tt {
+  color: var(--color-ink);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.prose-tt > * + * {
+  margin-top: 0.9em;
+}
+.prose-tt h1,
+.prose-tt h2,
+.prose-tt h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-top: 1.4em;
+}
+.prose-tt h1 {
+  font-size: 2.1rem;
+}
+.prose-tt h2 {
+  font-size: 1.65rem;
+}
+.prose-tt h3 {
+  font-size: 1.3rem;
+  color: var(--color-ink-2);
+}
+.prose-tt a {
+  color: #8fbcf3;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-tt ul {
+  list-style: disc;
+  padding-left: 1.4em;
+}
+.prose-tt ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+.prose-tt li + li {
+  margin-top: 0.25em;
+}
+.prose-tt li p {
+  margin: 0;
+}
+.prose-tt blockquote {
+  border-left: 3px solid var(--color-ball);
+  padding: 0.2em 0 0.2em 1em;
+  color: var(--color-ink-2);
+  font-style: italic;
+}
+.prose-tt hr {
+  border: 0;
+  border-top: 1px solid var(--color-line-2);
+  margin: 2em 0;
+}
+.prose-tt code {
+  background: var(--color-card-3);
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.prose-tt figure,
+.prose-tt .tt-figure {
+  margin: 1.4em 0;
+}
+.prose-tt .tt-figure img {
+  max-width: 100%;
+  max-height: 560px;
+  margin: 0 auto;
+  border-radius: 14px;
+  border: 1px solid var(--color-line);
+}
+.prose-tt .tt-figure.is-selected img {
+  outline: 3px solid var(--color-table);
+}
+.prose-tt .tt-figure figcaption {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  margin-top: 0.4em;
+}
+.prose-tt .tt-img-loading {
+  height: 220px;
+  border-radius: 14px;
+  background: var(--color-card-2);
+}
+.prose-tt div[data-youtube-video] {
+  margin: 1.4em 0;
+}
+.prose-tt div[data-youtube-video] iframe {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  border: 1px solid var(--color-line);
+  background: #000;
+}
+.prose-tt .ProseMirror-selectednode iframe {
+  outline: 3px solid var(--color-table);
+}
+.prose-tt p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-muted);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.ProseMirror:focus {
+  outline: none;
+}

@@ -63,6 +63,13 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // Blog posts: the public sees published posts only.
+    match /posts/{id} {
+      allow read: if resource.data.published == true || isAhaan();
+      allow create, update: if isAhaan() && request.resource.data.content is string && request.resource.data.content.size() < 900000;
+      allow delete: if isAhaan();
+    }
+
     // My Videos: the public sees published videos only.
     match /videos/{id} {
       allow read: if resource.data.published == true || isAhaan();

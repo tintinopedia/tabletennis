@@ -14,7 +14,7 @@ export function Gate({ title, children }: { title: string; children: ReactNode }
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/logo.png" alt="" className="mx-auto h-24 w-24" />
         <p className="font-display mt-2 text-3xl font-bold uppercase">{title}</p>
-        <p className="mt-2 text-sm text-ink-2">Only Tintin can sign in here.</p>
+        <p className="mt-2 text-sm text-ink-2">Only Ahaan can sign in here.</p>
         <div className="mx-auto mt-6 max-w-xs">
           <LoginOptions />
         </div>

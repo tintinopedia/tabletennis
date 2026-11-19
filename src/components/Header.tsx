@@ -7,13 +7,13 @@ import { useAuth, DEMO_MODE } from "./AuthProvider";
 export function Header() {
   const { user, loading, signOut, error } = useAuth();
   const path = usePathname();
-  const tabs: [string, string][] = [["/", "Home"]];
+  const tabs: [string, string][] = [["/", "Home"], ["/blog", "Blog"]];
   if (user) tabs.push(["/train", "Training"], ["/mantra", "Mantra"], ["/studio", "Studio"]);
   const tab = ([href, label]: [string, string]) => (
     <Link
       key={href}
       href={href}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition ${path === href ? "bg-ink text-paper" : "text-ink-2 hover:bg-card-2 hover:text-ink"}`}
+      className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition ${(href === "/" ? path === "/" : path.startsWith(href)) ? "bg-ink text-paper" : "text-ink-2 hover:bg-card-2 hover:text-ink"}`}
     >
       {label}
     </Link>
@@ -50,7 +50,7 @@ export function Header() {
             )}
           </div>
         </div>
-        {tabs.length > 1 && <nav className="no-scrollbar flex gap-1 overflow-x-auto border-t border-line px-4 py-2 md:hidden">{tabs.map(tab)}</nav>}
+        {<nav className="no-scrollbar flex gap-1 overflow-x-auto border-t border-line px-4 py-2 md:hidden">{tabs.map(tab)}</nav>}
         {error && (
           <div className="bg-bad-soft px-4 py-2 text-center text-sm text-bad">
             {error}

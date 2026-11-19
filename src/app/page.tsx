@@ -74,17 +74,8 @@ export default function Home() {
   return (
     <div className="space-y-6 pt-6">
       {/* Hero */}
-      <section className="court-bg relative overflow-hidden rounded-3xl p-6 sm:p-10">
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/logo.png" alt="Tintinopedia logo" className="h-36 w-36 shrink-0 drop-shadow-[0_10px_30px_rgba(224,48,46,0.25)] sm:h-48 sm:w-48" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-2">My Table Tennis Journal</p>
-            <h1 className="font-display mt-1 text-7xl font-bold uppercase leading-[0.85] sm:text-8xl">Tintin</h1>
-            <p className="mt-2 text-ink-2">Ahaan Basu Mojumdar · every drill, score and heartbeat, session by session.</p>
-          </div>
-        </div>
-        <div className="relative mt-8 grid gap-3 sm:grid-cols-3">
+      <section className="court-bg relative overflow-hidden rounded-3xl p-4 sm:p-5">
+        <div className="relative grid gap-3 sm:grid-cols-3">
           <HeroTile label="Sessions logged" value={String(tot.sessions)} sub={`${days.length} planned so far`} bar={tot.sessions / Math.max(days.length, 1)} />
           <HeroTile
             label="Training since"
