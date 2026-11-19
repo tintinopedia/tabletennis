@@ -237,3 +237,95 @@ select.field option {
 .ProseMirror:focus {
   outline: none;
 }
+
+/* media wrapping */
+.prose-tt .tt-media {
+  margin: 1.2em auto;
+}
+.prose-tt .tt-media[data-size="25"] {
+  width: 25%;
+}
+.prose-tt .tt-media[data-size="40"] {
+  width: 40%;
+}
+.prose-tt .tt-media[data-size="60"] {
+  width: 60%;
+}
+.prose-tt .tt-media[data-size="100"] {
+  width: 100%;
+}
+.prose-tt .tt-media[data-float="left"] {
+  float: left;
+  margin: 0.35em 1.4em 0.9em 0;
+}
+.prose-tt .tt-media[data-float="right"] {
+  float: right;
+  margin: 0.35em 0 0.9em 1.4em;
+}
+.prose-tt .tt-figure-inner img {
+  width: 100%;
+}
+.prose-tt .tt-media + * {
+  margin-top: 0;
+}
+.prose-tt::after,
+.prose-tt .ProseMirror::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.prose-tt h1,
+.prose-tt h2,
+.prose-tt hr,
+.prose-tt table {
+  clear: both;
+}
+@media (max-width: 640px) {
+  .prose-tt .tt-media[data-float] {
+    float: none;
+    width: 100%;
+    margin: 1em 0;
+  }
+}
+
+/* tables */
+.prose-tt table {
+  --tt-border: #2d3b58;
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  margin: 1.2em 0;
+  font-size: 0.95em;
+}
+.prose-tt td,
+.prose-tt th {
+  border: 1px solid var(--tt-border);
+  padding: 0.45em 0.7em;
+  vertical-align: top;
+  position: relative;
+}
+.prose-tt th {
+  font-weight: 600;
+  text-align: left;
+  background-color: rgba(57, 135, 229, 0.12);
+}
+.prose-tt td p,
+.prose-tt th p {
+  margin: 0;
+}
+.prose-tt .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(57, 135, 229, 0.22);
+  pointer-events: none;
+}
+.prose-tt .tableWrapper {
+  overflow-x: auto;
+  margin: 1.2em 0;
+}
+.prose-tt mark {
+  border-radius: 3px;
+  padding: 0 2px;
+  color: inherit;
+}

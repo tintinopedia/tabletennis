@@ -145,7 +145,7 @@ function PostEditor({ existing }: { existing?: PostDoc }) {
         </div>
       </div>
 
-      <div className="card mt-4 overflow-hidden">
+      <div className="card mt-4">
         {editor && <Toolbar editor={editor} onError={setErr} />}
         <div className="p-5 sm:p-6">
           <EditorContent editor={editor} />
@@ -184,19 +184,55 @@ function TB({ on, onClick, label, children, disabled }: { on?: boolean; onClick:
 }
 const Sep = () => <span className="mx-1 h-5 w-px bg-line-2" />;
 
+const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 60, 72];
+const TEXT_COLORS = ["#eef2f8", "#b7c0cf", "#7b879b", "#ff6b6b", "#f26a35", "#fab219", "#ffe066", "#2fbf4a", "#3ddbb0", "#3987e5", "#8fbcf3", "#9085e9", "#e87ba4", "#e0302e"];
+const FILL_COLORS = ["#3a1d1d", "#3d2a12", "#3b3510", "#173a20", "#123738", "#15325c", "#2a2552", "#3a1c32", "#222e47", "#ffe066", "#8fbcf3", "#ffa27c"];
+const BORDER_COLORS = ["#2d3b58", "#7b879b", "#eef2f8", "#3987e5", "#f26a35", "#2fbf4a", "#fab219", "#e0302e", "#9085e9"];
+
+function Swatches({ colors, current, onPick, onClear, clearLabel = "Default" }: { colors: string[]; current?: string | null; onPick: (c: string) => void; onClear: () => void; clearLabel?: string }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {colors.map((col) => (
+        <button
+          key={col}
+          type="button"
+          title={col}
+          aria-label={`Colour ${col}`}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPick(col)}
+          className={`h-6 w-6 rounded-md border ${current?.toLowerCase() === col ? "border-ink ring-2 ring-table" : "border-line-2"}`}
+          style={{ background: col }}
+        />
+      ))}
+      <label className="relative grid h-6 w-6 cursor-pointer place-items-center rounded-md border border-line-2 bg-card-3 text-xs text-ink-2" title="Custom colour">
+        +
+        <input type="color" className="absolute inset-0 cursor-pointer opacity-0" value={current && /^#[0-9a-f]{6}$/i.test(current) ? current : "#3987e5"} onChange={(e) => onPick(e.target.value)} />
+      </label>
+      <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onClear} className="rounded-md px-2 py-0.5 text-xs text-ink-2 hover:bg-card-3">
+        {clearLabel}
+      </button>
+    </div>
+  );
+}
+
 function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | null) => void }) {
-  const [panel, setPanel] = useState<null | "link" | "video">(null);
+  const [panel, setPanel] = useState<null | "link" | "video" | "color" | "highlight">(null);
   const [val, setVal] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const c = () => editor.chain().focus();
   const block = editor.isActive("heading", { level: 1 }) ? "h1" : editor.isActive("heading", { level: 2 }) ? "h2" : editor.isActive("heading", { level: 3 }) ? "h3" : "p";
+  const fontSize = String(editor.getAttributes("textStyle").fontSize ?? "").replace("pt", "");
+  const color = editor.getAttributes("textStyle").color as string | undefined;
+  const hl = editor.getAttributes("highlight").color as string | undefined;
+  const inTable = editor.isActive("table");
+  const sel = editor.state.selection as unknown as { node?: { type: { name: string }; attrs: Record<string, string> } };
+  const media = sel.node && (sel.node.type.name === "storedImage" || sel.node.type.name === "youtube") ? sel.node : null;
   useEffect(() => {
     if (panel === "link") setVal(editor.getAttributes("link").href ?? "");
-    else setVal("");
+    else if (panel === "video") setVal("");
   }, [panel, editor]);
 
-  // after inserting an image/video, put the cursor in a paragraph below it so typing doesn't replace it
   const caretAfter = () => {
     const { to } = editor.state.selection;
     const next = editor.state.doc.nodeAt(to);
@@ -233,8 +269,18 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
     setUploading(false);
   };
 
+  const setMedia = (attrs: Record<string, string>) => {
+    const { from } = editor.state.selection;
+    editor.chain().command(({ tr }) => {
+      const node = tr.doc.nodeAt(from);
+      if (!node) return false;
+      tr.setNodeMarkup(from, undefined, { ...node.attrs, ...attrs });
+      return true;
+    }).setNodeSelection(from).run();
+  };
+
   return (
-    <div className="sticky top-[68px] z-10 border-b border-line bg-card-2/95 backdrop-blur">
+    <div className="sticky top-[68px] z-10 rounded-t-2xl border-b border-line bg-card-2/95 backdrop-blur">
       <div className="flex flex-wrap items-center gap-0.5 p-2">
         <select
           aria-label="Text style"
@@ -251,6 +297,21 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
           <option value="h2">Heading 2</option>
           <option value="h3">Heading 3</option>
         </select>
+        <select
+          aria-label="Font size"
+          title="Font size (pt)"
+          value={fontSize}
+          onChange={(e) => (e.target.value ? c().setFontSize(`${e.target.value}pt`).run() : c().unsetFontSize().run())}
+          className="field mr-1 w-[4.6rem] px-2 py-1 text-sm"
+        >
+          <option value="">Size</option>
+          {fontSize && !FONT_SIZES.includes(Number(fontSize)) && <option value={fontSize}>{fontSize}</option>}
+          {FONT_SIZES.map((n) => (
+            <option key={n} value={String(n)}>
+              {n}
+            </option>
+          ))}
+        </select>
         <TB label="Bold" on={editor.isActive("bold")} onClick={() => c().toggleBold().run()}>
           <b>B</b>
         </TB>
@@ -262,6 +323,17 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
         </TB>
         <TB label="Strikethrough" on={editor.isActive("strike")} onClick={() => c().toggleStrike().run()}>
           <s>S</s>
+        </TB>
+        <TB label="Text colour" on={panel === "color"} onClick={() => setPanel(panel === "color" ? null : "color")}>
+          <span className="flex flex-col items-center leading-none">
+            <span className="font-semibold">A</span>
+            <span className="mt-0.5 h-1 w-4 rounded" style={{ background: color ?? "#eef2f8" }} />
+          </span>
+        </TB>
+        <TB label="Highlight colour" on={panel === "highlight"} onClick={() => setPanel(panel === "highlight" ? null : "highlight")}>
+          <span className="rounded px-1 text-xs font-bold" style={{ background: hl ?? "#ffe066", color: "#111" }}>
+            ab
+          </span>
         </TB>
         <Sep />
         <TB label="Bulleted list" on={editor.isActive("bulletList")} onClick={() => c().toggleBulletList().run()}>
@@ -292,6 +364,9 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
         <TB label="Embed YouTube video" on={panel === "video"} onClick={() => setPanel(panel === "video" ? null : "video")}>
           ▶
         </TB>
+        <TB label="Insert table" on={inTable} onClick={() => c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+          <TableIcon />
+        </TB>
         <Sep />
         <TB label="Undo" disabled={!editor.can().undo()} onClick={() => c().undo().run()}>
           ↶
@@ -311,7 +386,8 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
           }}
         />
       </div>
-      {panel && (
+
+      {(panel === "link" || panel === "video") && (
         <div className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2">
           <span className="text-xs text-muted">{panel === "link" ? "Link URL" : "YouTube link"}</span>
           <input
@@ -336,7 +412,122 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
           </button>
         </div>
       )}
+      {panel === "color" && (
+        <div className="flex items-center gap-3 border-t border-line px-3 py-2">
+          <span className="text-xs text-muted">Text colour</span>
+          <Swatches colors={TEXT_COLORS} current={color} onPick={(col) => c().setColor(col).run()} onClear={() => c().unsetColor().run()} />
+        </div>
+      )}
+      {panel === "highlight" && (
+        <div className="flex items-center gap-3 border-t border-line px-3 py-2">
+          <span className="text-xs text-muted">Highlight</span>
+          <Swatches colors={FILL_COLORS.slice(0, 9)} current={hl} onPick={(col) => c().setHighlight({ color: col }).run()} onClear={() => c().unsetHighlight().run()} clearLabel="None" />
+        </div>
+      )}
+
+      {media && (
+        <div className="flex flex-wrap items-center gap-3 border-t border-line bg-table/10 px-3 py-2 text-xs">
+          <span className="font-semibold text-ink">{media.type.name === "youtube" ? "Video" : "Image"}</span>
+          <span className="text-muted">Wrap text</span>
+          <div className="flex overflow-hidden rounded-full border border-line-2">
+            {(["none", "left", "right"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setMedia({ float: f, size: f !== "none" && (media.attrs.size ?? "100") === "100" ? "40" : media.attrs.size ?? "100" })}
+                className={`px-2.5 py-1 ${((media.attrs.float as string) ?? "none") === f ? "bg-table text-white" : "text-ink-2 hover:bg-card-3"}`}
+              >
+                {f === "none" ? "No wrap" : f === "left" ? "Image left" : "Image right"}
+              </button>
+            ))}
+          </div>
+          <span className="text-muted">Size</span>
+          <div className="flex overflow-hidden rounded-full border border-line-2">
+            {["25", "40", "60", "100"].map((sz) => (
+              <button
+                key={sz}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setMedia({ size: sz })}
+                className={`px-2.5 py-1 ${((media.attrs.size as string) ?? "100") === sz ? "bg-table text-white" : "text-ink-2 hover:bg-card-3"}`}
+              >
+                {sz}%
+              </button>
+            ))}
+          </div>
+          {media.type.name === "storedImage" && (
+            <input
+              className="field min-w-40 flex-1 px-2 py-1 text-xs"
+              placeholder="Caption (optional)"
+              defaultValue={media.attrs.caption ?? ""}
+              key={editor.state.selection.from}
+              onBlur={(e) => setMedia({ caption: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+            />
+          )}
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => c().deleteSelection().run()} className="ml-auto rounded-full px-2.5 py-1 text-bad hover:bg-card-3">
+            Remove
+          </button>
+        </div>
+      )}
+
+      {inTable && (
+        <div className="flex flex-wrap items-center gap-1 border-t border-line bg-table/10 px-3 py-2 text-xs">
+          <span className="mr-1 font-semibold text-ink">Table</span>
+          {(
+            [
+              ["+ Row above", () => c().addRowBefore().run()],
+              ["+ Row below", () => c().addRowAfter().run()],
+              ["+ Column left", () => c().addColumnBefore().run()],
+              ["+ Column right", () => c().addColumnAfter().run()],
+              ["− Row", () => c().deleteRow().run()],
+              ["− Column", () => c().deleteColumn().run()],
+              ["Header row", () => c().toggleHeaderRow().run()],
+              ["Merge cells", () => c().mergeCells().run()],
+              ["Split cell", () => c().splitCell().run()],
+            ] as [string, () => void][]
+          ).map(([label, fn]) => (
+            <button key={label} type="button" onMouseDown={(e) => e.preventDefault()} onClick={fn} className="rounded-full border border-line-2 px-2.5 py-1 text-ink-2 hover:bg-card-3 hover:text-ink">
+              {label}
+            </button>
+          ))}
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => c().deleteTable().run()} className="rounded-full px-2.5 py-1 text-bad hover:bg-card-3">
+            Delete table
+          </button>
+          <div className="mt-2 flex w-full flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="flex items-center gap-2">
+              <span className="text-muted">Line colour</span>
+              <Swatches
+                colors={BORDER_COLORS}
+                current={editor.getAttributes("table").borderColor}
+                onPick={(col) => c().updateAttributes("table", { borderColor: col }).run()}
+                onClear={() => c().updateAttributes("table", { borderColor: null }).run()}
+              />
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-muted">Cell fill</span>
+              <Swatches
+                colors={FILL_COLORS}
+                current={editor.getAttributes(editor.isActive("tableHeader") ? "tableHeader" : "tableCell").backgroundColor}
+                onPick={(col) => c().setCellAttribute("backgroundColor", col).run()}
+                onClear={() => c().setCellAttribute("backgroundColor", null).run()}
+                clearLabel="None"
+              />
+            </span>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function TableIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
+      <rect x="1.5" y="2" width="13" height="12" rx="1.5" />
+      <path d="M1.5 6h13M1.5 10h13M6 2v12M10.5 2v12" />
+    </svg>
   );
 }
 

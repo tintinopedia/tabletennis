@@ -6,6 +6,9 @@ import StarterKit from "@tiptap/starter-kit";
 import Youtube from "@tiptap/extension-youtube";
 import TextAlign from "@tiptap/extension-text-align";
 import { Placeholder } from "@tiptap/extensions";
+import { TextStyle, Color, FontSize } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
+import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import { getImage } from "./store";
 
 export type PostDoc = {
@@ -35,7 +38,7 @@ function StoredImageView({ node, selected }: ReactNodeViewProps) {
     };
   }, [id]);
   return (
-    <NodeViewWrapper as="figure" className={`tt-figure ${selected ? "is-selected" : ""}`} data-drag-handle>
+    <NodeViewWrapper as="figure" className={`tt-figure-inner ${selected ? "is-selected" : ""}`} data-drag-handle>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={caption || ""} />
@@ -52,7 +55,7 @@ export const StoredImage = Node.create({
   atom: true,
   draggable: true,
   addAttributes() {
-    return { id: { default: null }, caption: { default: "" } };
+    return { id: { default: null }, caption: { default: "" }, float: { default: "none" }, size: { default: "100" } };
   },
   parseHTML() {
     return [{ tag: "img[data-id]", getAttrs: (el) => ({ id: (el as HTMLElement).getAttribute("data-id") }) }];
@@ -61,7 +64,56 @@ export const StoredImage = Node.create({
     return ["img", mergeAttributes({ "data-id": HTMLAttributes.id, alt: HTMLAttributes.caption })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(StoredImageView);
+    return ReactNodeViewRenderer(StoredImageView, {
+      className: "tt-media tt-figure",
+      attrs: ({ node }) => ({ "data-float": String(node.attrs.float ?? "none"), "data-size": String(node.attrs.size ?? "100") }),
+    });
+  },
+});
+
+/* YouTube embed that can float left/right with text wrapping */
+const TTYoutube = Youtube.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      float: { default: "none", renderHTML: () => ({}) },
+      size: { default: "100", renderHTML: () => ({}) },
+    };
+  },
+  renderHTML(props) {
+    const out = this.parent!(props) as unknown as [string, Record<string, string>, unknown];
+    return [out[0], { ...out[1], class: "tt-media", "data-float": String(props.node.attrs.float ?? "none"), "data-size": String(props.node.attrs.size ?? "100") }, out[2]];
+  },
+});
+
+/* Table with a configurable line colour, cells with a background colour */
+const TTTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      borderColor: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-border-color"),
+        renderHTML: (a) => (a.borderColor ? { "data-border-color": a.borderColor, style: `--tt-border: ${a.borderColor}` } : {}),
+      },
+    };
+  },
+});
+const cellBg = {
+  backgroundColor: {
+    default: null,
+    parseHTML: (el: HTMLElement) => el.style.backgroundColor || null,
+    renderHTML: (a: Record<string, unknown>) => (a.backgroundColor ? { style: `background-color: ${a.backgroundColor}` } : {}),
+  },
+};
+const TTCell = TableCell.extend({
+  addAttributes() {
+    return { ...this.parent?.(), ...cellBg };
+  },
+});
+const TTHeader = TableHeader.extend({
+  addAttributes() {
+    return { ...this.parent?.(), ...cellBg };
   },
 });
 
@@ -71,7 +123,15 @@ export function blogExtensions(placeholder?: string) {
       heading: { levels: [1, 2, 3] },
       link: { openOnClick: false, autolink: true, protocols: ["http", "https", "mailto"], HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" } },
     }),
-    Youtube.configure({ nocookie: true, modestBranding: true, width: 640, height: 360 }),
+    TTYoutube.configure({ nocookie: true, modestBranding: true, width: 640, height: 360 }),
+    TextStyle,
+    Color,
+    FontSize,
+    Highlight.configure({ multicolor: true }),
+    TTTable.configure({ resizable: false }),
+    TableRow,
+    TTHeader,
+    TTCell,
     TextAlign.configure({ types: ["heading", "paragraph"] }),
     StoredImage,
     ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
