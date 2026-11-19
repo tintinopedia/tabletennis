@@ -308,7 +308,7 @@ function Trainer() {
             hr={entry.hr[it.code]}
             readOnly={locked}
             defaultLevel={defaultLevel}
-            defaultOpen={!isComplete && i === 0}
+            defaultOpen
             onStatus={(s) => setStatus(i, it.code, s)}
             onTest={(c, t) => update((e) => ({ ...e, tests: { ...e.tests, [c]: t } }))}
             onHr={(v) => update((e) => ({ ...e, hr: { ...e.hr, [it.code]: v } }))}
