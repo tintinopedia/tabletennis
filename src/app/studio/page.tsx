@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { Gate } from "@/components/Gate";
+import { useAuth } from "@/components/AuthProvider";
+import { GitHubMark } from "@/components/LoginButtons";
 import { SessionPlanner } from "@/components/studio/SessionPlanner";
 import { DrillLibrary } from "@/components/studio/DrillLibrary";
 import { VideoManager } from "@/components/studio/VideoManager";
@@ -13,6 +15,7 @@ const TABS = [
 
 export default function StudioPage() {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("sessions");
+  const { user, githubLinked, connectGithub } = useAuth();
   return (
     <Gate title="Studio">
       <div className="pt-6">
@@ -21,6 +24,11 @@ export default function StudioPage() {
             <p className="eyebrow">Studio</p>
             <h1 className="font-display text-4xl font-bold uppercase">Build the journey</h1>
           </div>
+          {user && !githubLinked && (
+            <button onClick={connectGithub} className="btn btn-ghost flex items-center gap-2">
+              <GitHubMark /> Connect GitHub login
+            </button>
+          )}
           <div className="flex gap-1 rounded-full border border-line bg-card p-1" role="tablist">
             {TABS.map(([k, label]) => (
               <button
