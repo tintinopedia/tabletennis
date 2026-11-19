@@ -141,9 +141,12 @@ function Trainer() {
     }
   };
 
-  const markDone = (e: SessionEntry, i: number) => ({ ...e.items, [String(i)]: e.items[String(i)] ?? ("done" as ItemStatus) });
-  const setStatus = (i: number, code: string, s: ItemStatus) =>
+  const setStatus = (i: number, code: string, s: ItemStatus | null) =>
     update((e) => {
+      if (s === null) {
+        delete e.items[String(i)];
+        return e;
+      }
       e.items[String(i)] = s;
       const tdefs = catalog[code]?.tests ?? [];
       if (s === "done") {
@@ -307,8 +310,8 @@ function Trainer() {
             defaultLevel={defaultLevel}
             defaultOpen={!isComplete && i === 0}
             onStatus={(s) => setStatus(i, it.code, s)}
-            onTest={(c, t) => update((e) => ({ ...e, items: markDone(e, i), tests: { ...e.tests, [c]: t } }))}
-            onHr={(v) => update((e) => ({ ...e, items: markDone(e, i), hr: { ...e.hr, [it.code]: v } }))}
+            onTest={(c, t) => update((e) => ({ ...e, tests: { ...e.tests, [c]: t } }))}
+            onHr={(v) => update((e) => ({ ...e, hr: { ...e.hr, [it.code]: v } }))}
           />
         ))}
       </div>

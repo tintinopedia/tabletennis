@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { LEVELS, type CodeDef, type Day, type DayItem, type Level } from "@/lib/plan";
+import { LEVELS as ALL_LEVELS } from "@/lib/plan";
+import { type CodeDef, type Day, type DayItem, type Level } from "@/lib/plan";
 import { isMet } from "@/lib/analytics";
 import type { ItemStatus, TestEntry } from "@/lib/store";
 import { VideoEmbed, ExhibitGrid, StoredImageGrid } from "./Media";
@@ -22,7 +23,7 @@ type Props = {
   hr: number | null | undefined;
   readOnly: boolean;
   defaultLevel: (code: string) => Level;
-  onStatus: (s: ItemStatus) => void;
+  onStatus: (s: ItemStatus | null) => void;
   onTest: (code: string, t: TestEntry) => void;
   onHr: (v: number | null) => void;
   defaultOpen?: boolean;
@@ -41,7 +42,22 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
   const showResults = hasResults && status !== "skipped";
   // videos stay visible at the table (collapse the step to hide them once it's done)
   const showVideos = open || status !== "done";
-  const needsScores = status === "done" && testDefs.some((t) => tests[t.code]?.score == null);
+  const missingScores = testDefs.filter((t) => tests[t.code]?.score == null).map((t) => t.code);
+  const needsScores = status === "done" && missingScores.length > 0;
+  const [confirm, setConfirm] = useState<null | "ask" | "missing">(null);
+  // level descriptions from the drill card ("Foundation: … · Competitor: … · Advanced: …")
+  const levelText: Partial<Record<Level, string>> = {};
+  for (const part of (steps.find((x) => /^levels?$/i.test(x.k))?.v ?? "").split(/\s·\s/)) {
+    const m = part.match(/^(Foundation|Competitor|Advanced)\s*:\s*(.+)$/);
+    if (m) levelText[m[1] as Level] = m[2].trim();
+  }
+  // levels the day's plan mentions for this drill, e.g. "at Foundation pace"
+  const suggested = [...new Set(prescription.join(" ").match(/Foundation|Competitor|Advanced/g) ?? [])] as Level[];
+  const planLevel = suggested[suggested.length - 1];
+  const clickDone = () => {
+    if (status === "done") return onStatus(null);
+    setConfirm(missingScores.length ? "missing" : "ask");
+  };
 
   return (
     <section className={`card overflow-hidden ${status === "done" ? "!border-good/40" : status === "skipped" ? "opacity-75" : ""}`}>
@@ -66,7 +82,7 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
             <button
               key={s}
               disabled={readOnly}
-              onClick={() => onStatus(s)}
+              onClick={() => (s === "done" ? clickDone() : (setConfirm(null), onStatus(status === "skipped" ? null : "skipped")))}
               className={`px-3 py-1.5 font-medium transition disabled:cursor-not-allowed ${
                 status === s ? (s === "done" ? "bg-good text-paper" : "bg-card-3 text-ink") : "text-ink-2 hover:bg-card-2"
               }`}
@@ -76,6 +92,38 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
           ))}
         </div>
       </div>
+
+      {confirm && !readOnly && (
+        <div className={`flex flex-wrap items-center gap-2 border-t px-3 py-2.5 text-sm sm:px-4 ${confirm === "ask" ? "border-good/30 bg-good-soft" : "border-warn/30 bg-warn-soft"}`} role="alert">
+          {confirm === "ask" ? (
+            <>
+              <span className="flex-1">
+                Save <b>{item.code}</b> as done{testDefs.length ? ` with ${testDefs.map((t) => `${t.code} ${tests[t.code]?.score}`).join(", ")}` : ""}
+                {item.hr && hr ? `, heart rate ${hr} bpm` : ""}?
+              </span>
+              <button
+                className="rounded-full bg-good px-3 py-1 text-xs font-semibold text-paper"
+                onClick={() => {
+                  setConfirm(null);
+                  onStatus("done");
+                }}
+              >
+                Yes, save
+              </button>
+              <button className="rounded-full px-3 py-1 text-xs text-ink-2 hover:bg-card-2" onClick={() => setConfirm(null)}>
+                Not yet
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="flex-1 text-warn">Enter the {missingScores.join(", ")} score{missingScores.length > 1 ? "s" : ""} below first, then tap Done.</span>
+              <button className="rounded-full px-3 py-1 text-xs text-ink-2 hover:bg-card-2" onClick={() => setConfirm(null)}>
+                OK
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {(open || showResults || (showVideos && videos.length > 0)) && (
         <div className="space-y-5 border-t border-line p-3 sm:p-4">
@@ -121,7 +169,7 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
             <div className="rounded-xl border border-dashed border-line-2 bg-card-2/50 p-3">
               <p className="eyebrow mb-2">
                 Log results
-                {!status && !readOnly && <span className="ml-2 normal-case tracking-normal text-muted">entering a value marks this step Done</span>}
+                {!status && !readOnly && <span className="ml-2 normal-case tracking-normal text-muted">enter results, then tap Done</span>}
               </p>
               <div className="space-y-3">
                 {testDefs.map((tc) => {
@@ -137,6 +185,16 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
                           {tc.counts}
                           {tc.target != null && ` · target ${tc.direction === "low" ? "≤" : "≥"} ${tc.target}`}
                         </p>
+                        {tc.levels && levelText[t.level] && (
+                          <p className="mt-0.5 text-xs text-ink-2">
+                            <span className="font-semibold text-[#8fbcf3]">{t.level}:</span> {levelText[t.level]}
+                          </p>
+                        )}
+                        {tc.levels && planLevel && planLevel !== t.level && !readOnly && (
+                          <button className="mt-1 rounded-full border border-table/40 px-2 py-0.5 text-[11px] text-[#8fbcf3] hover:bg-table/10" onClick={() => onTest(tc.code, { ...t, level: planLevel })}>
+                            Today&apos;s plan says {planLevel}. Use it
+                          </button>
+                        )}
                       </div>
                       {tc.levels ? (
                         <select
@@ -146,8 +204,11 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
                           onChange={(e) => onTest(tc.code, { ...t, level: e.target.value as Level })}
                           className="field px-2 py-2 text-sm"
                         >
-                          {LEVELS.map((l) => (
-                            <option key={l}>{l}</option>
+                          {ALL_LEVELS.map((l) => (
+                            <option key={l} value={l}>
+                              {l}
+                              {planLevel === l ? " (today's plan)" : ""}
+                            </option>
                           ))}
                         </select>
                       ) : (
