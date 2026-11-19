@@ -6,6 +6,18 @@ import { newId, put, remove, subscribe, type MantraDoc, type MantraSection, type
 
 const P = (text: string) => ({ id: newId(), text });
 const EL = (n: number, title: string, hint: string): MantraSection => ({ id: `el${n}`, title: `${n}. ${title}`, hint, points: [P(hint)], kind: "element" });
+const RULES = [
+  "First person, present tense.",
+  "Positive: what I DO, never what I avoid. 'I stay calm', never 'I don't get nervous'.",
+  "Precise to MY game, and powerful.",
+  "Written in the language my inner voice actually speaks.",
+];
+const CHECKLIST = [
+  "Read the twelve sentences as one flowing text. Slow, confident voice, 60 to 120 seconds.",
+  "Listen with headphones before EVERY match, as a fixed step of the M5 routine, and every night after the journal for the first two weeks.",
+  "Re-record every season: my game grows, my identity statement grows with it.",
+];
+
 const DEFAULT_MANTRA: MantraDoc = {
   sections: [
     EL(1, "Work ethic", "I am a player who…"),
@@ -20,27 +32,6 @@ const DEFAULT_MANTRA: MantraDoc = {
     EL(10, "Clarity and vision", "My mind is… I see…"),
     EL(11, "Resilience", "I am… when it is needed."),
     EL(12, "Identity (close with three)", "I am prepared. I am focused. I am…"),
-    {
-      id: "rules",
-      title: "Rules for writing",
-      kind: "info",
-      points: [
-        P("First person, present tense."),
-        P("Positive: what I DO, never what I avoid. 'I stay calm', never 'I don't get nervous'."),
-        P("Precise to MY game, and powerful."),
-        P("Written in the language my inner voice actually speaks."),
-      ],
-    },
-    {
-      id: "checklist",
-      title: "Recording checklist",
-      kind: "info",
-      points: [
-        P("Read the twelve sentences as one flowing text. Slow, confident voice, 60 to 120 seconds."),
-        P("Listen with headphones before EVERY match, as a fixed step of the M5 routine, and every night after the journal for the first two weeks."),
-        P("Re-record every season: my game grows, my identity statement grows with it."),
-      ],
-    },
   ],
 };
 
@@ -69,7 +60,7 @@ function Mantra() {
     }
   };
   const setSection = (sid: string, fn: (s: MantraSection) => MantraSection) => save({ ...doc, sections: doc.sections.map((s) => (s.id === sid ? fn(s) : s)) });
-  const elements = doc.sections.filter((s) => s.kind !== "info");
+  const elements = doc.sections.filter((s) => s.kind !== "info" && s.id !== "rules" && s.id !== "checklist");
   const flowing = elements.flatMap((s) => s.points.map((p) => p.text.trim())).filter(Boolean);
 
   return (
@@ -92,26 +83,44 @@ function Mantra() {
       </div>
 
       <div className="mt-8 space-y-4">
-        {doc.sections.map((s) => (
+        {elements.map((s) => (
           <SectionCard
             key={s.id}
             s={s}
             onChange={(fn) => setSection(s.id, fn)}
-            onDelete={() => save({ ...doc, sections: doc.sections.filter((x) => x.id !== s.id) }, "Section removed")}
+            onDelete={() => save({ ...doc, sections: elements.filter((x) => x.id !== s.id) }, "Section removed")}
           />
         ))}
         <button
           className="btn btn-ghost"
           onClick={() => {
-            const idx = doc.sections.findIndex((s) => s.kind === "info");
             const sec: MantraSection = { id: newId(), title: `${elements.length + 1}. New element`, points: [P("")], kind: "element" };
-            const sections = [...doc.sections];
-            sections.splice(idx < 0 ? sections.length : idx, 0, sec);
-            save({ ...doc, sections }, "Section added");
+            save({ ...doc, sections: [...elements, sec] }, "Section added");
           }}
         >
           + Add element
         </button>
+      </div>
+
+      <div className="mt-10 grid gap-4 border-t border-line pt-6 sm:grid-cols-2">
+        {(
+          [
+            ["Rules for writing", RULES],
+            ["Recording checklist", CHECKLIST],
+          ] as const
+        ).map(([title, lines]) => (
+          <div key={title}>
+            <p className="eyebrow mb-2">{title}</p>
+            <ul className="space-y-1.5 text-sm text-ink-2">
+              {lines.map((l) => (
+                <li key={l} className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted" />
+                  <span>{l}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </div>
   );
