@@ -2,11 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Only Tintin's Google account (ahaan@tintinopedia.com) can write.
+    // Only Tintin's account (ahaan@tintinopedia.com) can write.
+    // Google sign-in verifies the email; GitHub sign-in counts once it is linked to that Google account.
     function isAhaan() {
       return request.auth != null
         && request.auth.token.email == 'ahaan@tintinopedia.com'
-        && request.auth.token.email_verified == true;
+        && (request.auth.token.email_verified == true
+            || 'google.com' in request.auth.token.firebase.identities);
     }
 
     function prevComplete(day) {
