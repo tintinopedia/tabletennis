@@ -4,7 +4,7 @@ import { useData } from "../DataProvider";
 import { ConfirmButton, Field, Toggle, Toast, useToast } from "../ui";
 import { KIND_STYLE, codeBadge } from "../ItemPanel";
 import { BUILTIN_CATALOG, SECTIONS, youtubeId, ytThumb, type CodeDoc, type Kind, type Section, type Step, type TestDef, type VideoRef } from "@/lib/plan";
-import { getImage, newId, put, remove } from "@/lib/store";
+import { getImage, newId, put, remove, saveError } from "@/lib/store";
 import { compressImage } from "@/lib/image";
 
 /** Image in the editor: existing (id) or freshly picked (data, uploaded on save) */
@@ -132,7 +132,7 @@ export function DrillLibrary() {
       setDraft(null);
     } catch (e) {
       console.error(e);
-      setErr("Could not save. Check your connection.");
+      setErr(saveError(e));
     }
   };
 

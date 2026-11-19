@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ConfirmButton, Field, Toggle, Toast, useToast } from "../ui";
 import { VideoThumb, VideoModal } from "../Media";
 import { youtubeId } from "@/lib/plan";
-import { newId, put, remove, subscribe, type VideoDoc } from "@/lib/store";
+import { newId, put, remove, subscribe, type VideoDoc, saveError } from "@/lib/store";
 import { fmtDate, todayIso } from "@/lib/analytics";
 
 const blank = () => ({ url: "", title: "", recordedOn: todayIso(), description: "", published: true });
@@ -41,7 +41,7 @@ export function VideoManager() {
       setEditing(null);
     } catch (e) {
       console.error(e);
-      setErr("Could not save. Check your connection.");
+      setErr(saveError(e));
     }
   };
   const swap = async (i: number, j: number) => {

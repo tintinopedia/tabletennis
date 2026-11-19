@@ -6,7 +6,7 @@ import { useData } from "@/components/DataProvider";
 import { ItemPanel } from "@/components/ItemPanel";
 import type { Catalog, Day, Level } from "@/lib/plan";
 import { currentDay, fmtDate, todayIso } from "@/lib/analytics";
-import { saveSession, type SessionEntry, type ItemStatus } from "@/lib/store";
+import { saveSession, type SessionEntry, type ItemStatus, saveError } from "@/lib/store";
 
 export default function TrainPage() {
   return (
@@ -50,6 +50,7 @@ function Trainer() {
   const [entry, setEntry] = useState<SessionEntry>(saved ?? blank(viewDay));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveMsg, setSaveMsg] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
   const dirtyRef = useRef(false);
@@ -93,6 +94,7 @@ function Trainer() {
         setSaving("saved");
       } catch (err) {
         console.error(err);
+        setSaveMsg(saveError(err));
         setSaving("error");
       }
     }, 900);
@@ -134,6 +136,7 @@ function Trainer() {
       setTimeout(() => setToast(null), 4000);
     } catch (err) {
       console.error(err);
+      setSaveMsg(saveError(err));
       setSaving("error");
     }
   };
@@ -356,7 +359,7 @@ function Trainer() {
                 </span>
               )}
               <span className="block text-xs text-muted">
-                {saving === "saving" ? "Saving…" : saving === "error" ? "Could not save. Check your connection." : !isComplete && saving === "saved" ? "Draft saved" : isComplete && dirty ? "Unsaved changes" : ""}
+                {saving === "saving" ? "Saving…" : saving === "error" ? saveMsg : !isComplete && saving === "saved" ? "Draft saved" : isComplete && dirty ? "Unsaved changes" : ""}
               </span>
             </div>
             <button onClick={submit} disabled={saving === "saving" || (isComplete && !dirty)} className={`btn ${missing.length ? "bg-card-3 text-ink" : "btn-primary"}`}>

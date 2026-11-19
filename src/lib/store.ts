@@ -125,3 +125,14 @@ export function subscribeSessions(cb: (m: SessionMap) => void) {
   });
 }
 export const saveSession = (e: SessionEntry) => put("sessions", String(e.day), { ...e, updatedAt: Date.now() });
+
+/** Human-readable reason a save failed */
+export function saveError(e: unknown): string {
+  const code = (e as { code?: string })?.code ?? "";
+  if (code.includes("permission-denied"))
+    return "Not allowed by the database rules. Publish the latest firestore.rules in Firebase (Firestore > Rules) and make sure you are signed in as ahaan@tintinopedia.com.";
+  if (code.includes("not-found") || code.includes("failed-precondition")) return "The Firestore database was not found. Create it in Firebase (Firestore Database > Create database).";
+  if (code.includes("unavailable")) return "Can't reach the database. Check your internet connection.";
+  if (code.includes("invalid-argument") || code.includes("resource-exhausted")) return "The data is too large to save.";
+  return `Could not save${code ? ` (${code})` : ""}.`;
+}

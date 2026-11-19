@@ -5,7 +5,7 @@ import { ConfirmButton, Field, Toggle, Toast, useToast } from "../ui";
 import { KIND_STYLE, codeBadge } from "../ItemPanel";
 import { PLAN_LENGTH, SECTIONS, type CustomDayDoc, type DayItem } from "@/lib/plan";
 import { fmtDate } from "@/lib/analytics";
-import { put, remove } from "@/lib/store";
+import { put, remove, saveError } from "@/lib/store";
 
 type Draft = CustomDayDoc & { mainText: string };
 
@@ -78,7 +78,7 @@ export function SessionPlanner() {
       } else setDraft(null);
     } catch (e) {
       console.error(e);
-      setErr("Could not save. Check your connection.");
+      setErr(saveError(e));
     }
   };
 

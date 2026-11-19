@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Gate } from "@/components/Gate";
 import { ConfirmButton, Toast, useToast } from "@/components/ui";
-import { newId, put, remove, subscribe, type MantraDoc, type MantraSection, type RecordingDoc } from "@/lib/store";
+import { newId, put, remove, subscribe, type MantraDoc, type MantraSection, type RecordingDoc, saveError } from "@/lib/store";
 
 const P = (text: string) => ({ id: newId(), text });
 const EL = (n: number, title: string, hint: string): MantraSection => ({ id: `el${n}`, title: `${n}. ${title}`, hint, points: [P(hint)], kind: "element" });
@@ -65,7 +65,7 @@ function Mantra() {
       if (msg) showToast(msg);
     } catch (e) {
       console.error(e);
-      showToast("Could not save");
+      showToast(saveError(e));
     }
   };
   const setSection = (sid: string, fn: (s: MantraSection) => MantraSection) => save({ ...doc, sections: doc.sections.map((s) => (s.id === sid ? fn(s) : s)) });
@@ -261,7 +261,7 @@ function Recorder({ onSaved }: { onSaved: () => void }) {
         onSaved();
       } catch (e) {
         console.error(e);
-        setErr("Could not save the recording.");
+        setErr(saveError(e));
       }
       setState("idle");
     };
