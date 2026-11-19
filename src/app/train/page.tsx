@@ -189,9 +189,9 @@ function Trainer() {
         </div>
       )}
 
-      <div className="card flex flex-wrap items-center gap-3 p-3">
+      <div className="card flex flex-wrap items-center gap-2 p-2.5 sm:gap-3 sm:p-3">
         <button onClick={() => setViewDay(Math.max(1, viewDay - 1))} disabled={viewDay === 1} className="btn btn-ghost" aria-label="Previous session">
-          ‹ Prev
+          ‹<span className="hidden sm:inline"> Prev</span>
         </button>
         <select value={viewDay} onChange={(e) => setViewDay(Number(e.target.value))} className="field min-w-0 flex-1 px-3 py-2 text-sm font-medium" aria-label="Jump to session">
           {days.map((d) => {
@@ -205,7 +205,7 @@ function Trainer() {
           })}
         </select>
         <button onClick={() => setViewDay(Math.min(total, viewDay + 1))} disabled={viewDay === total} className="btn btn-ghost" aria-label="Next session">
-          Next ›
+          <span className="hidden sm:inline">Next </span>›
         </button>
         {!isCurrent && !allDone && (
           <button onClick={() => setViewDay(cur)} className="btn bg-table text-white">
@@ -323,7 +323,7 @@ function Trainer() {
       )}
 
       <div className="card mt-4 flex flex-wrap items-center gap-3 p-4">
-        <div className="flex-1">
+        <div className="w-full sm:w-auto sm:flex-1">
           <p className="font-semibold">Training date</p>
           <p className="text-xs text-muted">The day you actually trained this session.</p>
         </div>
@@ -334,7 +334,7 @@ function Trainer() {
           min={prevDate}
           disabled={locked}
           onChange={(e) => update((x) => ({ ...x, trainingDate: e.target.value }))}
-          className="field px-3 py-2 text-sm"
+          className="field min-w-0 flex-1 px-3 py-2 text-sm sm:flex-none"
           aria-label="Training date"
         />
         {!locked && (
@@ -400,7 +400,7 @@ function Trainer() {
       </div>
 
       {!locked && (
-        <div className="sticky bottom-3 z-20 mt-6">
+        <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-6 md:bottom-3">
           <div className="card flex flex-wrap items-center gap-3 p-3 shadow-2xl shadow-black/50">
             <div className="min-w-0 flex-1 text-sm">
               {missing.length === 0 ? (

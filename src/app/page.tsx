@@ -75,7 +75,7 @@ export default function Home() {
     <div className="space-y-6 pt-6">
       {/* Hero */}
       <section className="court-bg relative overflow-hidden rounded-3xl p-4 sm:p-5">
-        <div className="relative grid gap-3 sm:grid-cols-3">
+        <div className="relative grid grid-cols-3 gap-2 sm:gap-3">
           <HeroTile label="Sessions logged" value={String(tot.sessions)} sub={`${days.length} planned so far`} bar={tot.sessions / Math.max(days.length, 1)} />
           <HeroTile
             label="Training since"
@@ -110,9 +110,9 @@ export default function Home() {
       </section>
 
       {/* Period switch */}
-      <div className="sticky top-[68px] z-20 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-paper/90 px-3 py-2 backdrop-blur">
+      <div className="no-scrollbar sticky top-[53px] z-20 -mx-1 flex items-center gap-3 overflow-x-auto md:top-[68px] md:flex-wrap rounded-2xl border border-line bg-paper/90 px-3 py-2 backdrop-blur">
         <span className="eyebrow">Trends</span>
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Period">
+        <div className="flex shrink-0 gap-1 md:flex-wrap" role="tablist" aria-label="Period">
           {PERIODS.map((p) => (
             <button
               key={p}
@@ -299,7 +299,34 @@ export default function Home() {
         <div className="p-5 pb-3">
           <Head title="Drill scoreboard" sub="Target met twice in a row at one level means move up." />
         </div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-line border-t border-line md:hidden">
+          {drillStatsOnly.map((s) => (
+            <button key={s.code} onClick={() => setDrill(s.code)} className={`flex w-full items-center gap-3 px-4 py-3 text-left ${selCode === s.code ? "bg-table/10" : ""}`}>
+              <span className="font-display w-12 shrink-0 text-lg font-bold">{s.code}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-ink-2">{s.name}</span>
+                <span className="mt-0.5 flex items-center gap-2 text-xs text-muted">
+                  {s.attempts ? (
+                    <>
+                      <span className="num">
+                        Latest <b className="text-ink">{s.latest}</b>
+                        {s.def.max ? `/${s.def.max}` : ""}
+                      </span>
+                      <span className="num">· {pct(s.passRate)} at target</span>
+                    </>
+                  ) : (
+                    "Not tested"
+                  )}
+                </span>
+              </span>
+              <span className="flex shrink-0 flex-col items-end gap-1">
+                <Sparkline values={s.series.map((r) => r.score)} target={s.def.target} low={s.def.direction === "low"} />
+                {s.levelUp && <span className="rounded-full bg-good-soft px-2 py-0.5 text-[10px] font-semibold text-good">▲ Level up</span>}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-y border-line bg-card-2/50 text-left text-xs text-muted">
@@ -391,10 +418,10 @@ export default function Home() {
 
 function HeroTile({ label, value, sub, bar }: { label: string; value: string; sub: string; bar?: number }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-paper/40 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
-      <p className="font-display num text-3xl font-bold leading-tight">{value}</p>
-      <p className="truncate text-xs text-ink-2">{sub}</p>
+    <div className="min-w-0 rounded-2xl border border-white/5 bg-paper/40 p-3 sm:p-4">
+      <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted sm:text-[11px]">{label}</p>
+      <p className="font-display num truncate text-xl font-bold leading-tight sm:text-3xl">{value}</p>
+      <p className="line-clamp-2 text-[11px] leading-snug text-ink-2 sm:truncate sm:text-xs">{sub}</p>
       {bar != null && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-card-3">
           <div className="h-full rounded-full bg-ball" style={{ width: `${Math.min(1, bar) * 100}%` }} />
@@ -415,7 +442,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub: string 
   return (
     <div className="card p-4">
       <p className="eyebrow">{label}</p>
-      <p className="font-display num mt-1 text-4xl font-bold">{value}</p>
+      <p className="font-display num mt-1 text-3xl font-bold sm:text-4xl">{value}</p>
       <p className="truncate text-xs text-muted">{sub}</p>
     </div>
   );

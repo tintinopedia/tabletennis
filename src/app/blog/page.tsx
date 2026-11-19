@@ -50,11 +50,31 @@ function Blog() {
           <h1 className="font-display text-4xl font-bold uppercase">Tintin&apos;s journal</h1>
         </div>
       </div>
+      {/* phones: archive in a collapsible panel, create button floats above the tab bar */}
+      <details className="card group mb-4 lg:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold">
+          <span className="flex-1">Archive and tags</span>
+          <span className="num rounded-full bg-card-3 px-2 text-xs text-ink-2">{posts.length}</span>
+          <span className="text-muted transition group-open:rotate-90">›</span>
+        </summary>
+        <div className="border-t border-line p-3">
+          <BlogSidebar posts={posts} activeId={post?.id} canEdit={false} bare />
+        </div>
+      </details>
+      {user && (
+        <Link
+          href="/blog/edit"
+          aria-label="Create post"
+          className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] right-4 z-30 grid h-14 w-14 place-items-center rounded-full bg-ball text-3xl leading-none text-white shadow-xl shadow-black/50 lg:hidden"
+        >
+          +
+        </Link>
+      )}
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <div className="order-2 lg:order-1">
+        <div className="hidden lg:block">
           <BlogSidebar posts={posts} activeId={post?.id} canEdit={!!user} />
         </div>
-        <div className="order-1 min-w-0 lg:order-2">
+        <div className="min-w-0">
           {postId ? post ? <FullPost post={post} posts={posts} canEdit={!!user} /> : <Missing /> : <PostList list={list} tag={tag} canEdit={!!user} />}
         </div>
       </div>
@@ -109,7 +129,7 @@ function PostList({ list, tag, canEdit }: { list: PostDoc[]; tag: string | null;
             </div>
           </div>
           {p.cover && (
-            <span className="hidden aspect-[4/3] w-44 shrink-0 overflow-hidden rounded-xl border border-line sm:block">
+            <span className="aspect-square w-20 shrink-0 self-start overflow-hidden rounded-xl border border-line sm:aspect-[4/3] sm:w-44">
               <CoverThumb id={p.cover} />
             </span>
           )}

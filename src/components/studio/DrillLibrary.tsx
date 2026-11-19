@@ -145,11 +145,11 @@ export function DrillLibrary() {
       <Toast text={toast} />
       <section className="card p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1">
+          <div className="w-full flex-1 sm:w-auto">
             <h2 className="font-display text-2xl font-bold uppercase">Drill library</h2>
             <p className="text-sm text-muted">Every code you can put in a session. Add YouTube links here and they play on the Training page.</p>
           </div>
-          <input className="field w-48 px-3 py-2 text-sm" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="field min-w-0 flex-1 px-3 py-2 text-sm sm:w-48 sm:flex-none" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="btn btn-primary" onClick={() => open()}>
             + New code
           </button>

@@ -153,7 +153,7 @@ function PostEditor({ existing }: { existing?: PostDoc }) {
       </div>
 
       {err && <p className="mt-3 text-sm text-bad">{err}</p>}
-      <div className="sticky bottom-3 z-20 mt-4">
+      <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-4 md:bottom-3">
         <div className="card flex flex-wrap items-center gap-3 p-3 shadow-2xl shadow-black/50">
           <Toggle checked={published} onChange={setPublished} label={published ? "Published (visible to everyone)" : "Draft (only you can see it)"} />
           <span className="flex-1" />
@@ -280,7 +280,7 @@ function Toolbar({ editor, onError }: { editor: Editor; onError: (s: string | nu
   };
 
   return (
-    <div className="sticky top-[68px] z-10 rounded-t-2xl border-b border-line bg-card-2/95 backdrop-blur">
+    <div className="sticky top-[53px] z-10 rounded-t-2xl md:top-[68px] border-b border-line bg-card-2/95 backdrop-blur">
       <div className="flex flex-wrap items-center gap-0.5 p-2">
         <select
           aria-label="Text style"

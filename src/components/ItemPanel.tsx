@@ -62,7 +62,7 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
   return (
     <section className={`card overflow-hidden ${status === "done" ? "!border-good/40" : status === "skipped" ? "opacity-75" : ""}`}>
       <div className="flex flex-wrap items-center gap-3 p-3 sm:p-4">
-        <button onClick={() => setOpen(!open)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-expanded={open}>
+        <button onClick={() => setOpen(!open)} className="flex min-w-0 basis-full items-center gap-3 text-left sm:basis-auto sm:flex-1" aria-expanded={open}>
           <span className={`font-display grid h-11 min-w-11 place-items-center rounded-lg px-2 text-base font-bold ${KIND_STYLE[kind]}`}>{codeBadge(item.code)}</span>
           <span className="min-w-0">
             <span className="block truncate font-semibold">{def?.name ?? item.code}</span>
@@ -77,13 +77,13 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
             <path d="M5.5 7.5 10 12l4.5-4.5" stroke="currentColor" strokeWidth="2" fill="none" />
           </svg>
         </button>
-        <div className="flex overflow-hidden rounded-full border border-line-2 text-sm" role="group" aria-label="Status">
+        <div className="flex w-full overflow-hidden rounded-full border border-line-2 text-sm sm:w-auto" role="group" aria-label="Status">
           {(["done", "skipped"] as const).map((s) => (
             <button
               key={s}
               disabled={readOnly}
               onClick={() => (s === "done" ? clickDone() : (setConfirm(null), onStatus(status === "skipped" ? null : "skipped")))}
-              className={`px-3 py-1.5 font-medium transition disabled:cursor-not-allowed ${
+              className={`flex-1 px-3 py-2 font-medium transition disabled:cursor-not-allowed sm:flex-none sm:py-1.5 ${
                 status === s ? (s === "done" ? "bg-good text-paper" : "bg-card-3 text-ink") : "text-ink-2 hover:bg-card-2"
               }`}
             >

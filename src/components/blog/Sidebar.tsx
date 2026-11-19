@@ -3,7 +3,7 @@ import Link from "next/link";
 import { monthKey, monthLabel, type PostDoc } from "@/lib/blog";
 import { fmtDate } from "@/lib/analytics";
 
-export function BlogSidebar({ posts, activeId, canEdit }: { posts: PostDoc[]; activeId?: string | null; canEdit: boolean }) {
+export function BlogSidebar({ posts, activeId, canEdit, bare }: { posts: PostDoc[]; activeId?: string | null; canEdit: boolean; bare?: boolean }) {
   // year -> month -> posts (already newest first)
   const years = new Map<string, Map<string, PostDoc[]>>();
   for (const p of posts) {
@@ -19,13 +19,13 @@ export function BlogSidebar({ posts, activeId, canEdit }: { posts: PostDoc[]; ac
   const tags = [...new Set(posts.flatMap((p) => p.tags))].sort();
 
   return (
-    <aside className="space-y-5 lg:sticky lg:top-24">
+    <aside className={`space-y-5 ${bare ? "" : "lg:sticky lg:top-24"}`}>
       {canEdit && (
         <Link href="/blog/edit" className="btn btn-primary block text-center">
           + Create post
         </Link>
       )}
-      <div className="card p-4">
+      <div className={bare ? "p-1" : "card p-4"}>
         <p className="eyebrow mb-2">Archive</p>
         {posts.length === 0 && <p className="text-sm text-muted">No posts yet.</p>}
         <div className="space-y-3">
@@ -62,7 +62,7 @@ export function BlogSidebar({ posts, activeId, canEdit }: { posts: PostDoc[]; ac
         </div>
       </div>
       {tags.length > 0 && (
-        <div className="card p-4">
+        <div className={bare ? "p-1" : "card p-4"}>
           <p className="eyebrow mb-2">Tags</p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map((t) => (

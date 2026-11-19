@@ -116,17 +116,17 @@ export function SessionPlanner() {
       <Toast text={toast} />
       <section className="card p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1">
+          <div className="w-full flex-1 sm:w-auto">
             <h2 className="font-display text-2xl font-bold uppercase">Planned sessions</h2>
             <p className="text-sm text-muted">
               Season 1 runs Day 1 to Day {PLAN_LENGTH}. New sessions are added after the last planned day and unlock in order on the Training page.
             </p>
           </div>
-          <button onClick={() => startNew()} className="btn btn-primary">
+          <button onClick={() => startNew()} className="btn btn-primary w-full sm:w-auto">
             + Plan Day {nextDay}
           </button>
           <select
-            className="field px-3 py-2 text-sm"
+            className="field w-full px-3 py-2 text-sm sm:w-auto"
             value=""
             onChange={(e) => e.target.value && startNew(Number(e.target.value))}
             aria-label="Copy drills from an existing day"
