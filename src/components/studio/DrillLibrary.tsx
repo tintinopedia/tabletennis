@@ -145,7 +145,7 @@ export function DrillLibrary() {
       <Toast text={toast} />
       <section className="card p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-full flex-1 sm:w-auto">
+          <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
             <h2 className="font-display text-2xl font-bold uppercase">Drill library</h2>
             <p className="text-sm text-muted">Every code you can put in a session. Add YouTube links here and they play on the Training page.</p>
           </div>
@@ -161,9 +161,9 @@ export function DrillLibrary() {
             return (
               <div key={s}>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-2">{s}</p>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {codes.map((c) => (
-                    <button key={c.code} onClick={() => open(c.code)} className="flex items-center gap-3 rounded-xl border border-line bg-card-2/40 p-3 text-left transition hover:border-line-2 hover:bg-card-2">
+                    <button key={c.code} onClick={() => open(c.code)} className="flex min-w-0 items-center gap-3 rounded-xl border border-line bg-card-2/40 p-3 text-left transition hover:border-line-2 hover:bg-card-2">
                       <span className={`font-display grid h-10 min-w-10 place-items-center rounded-lg px-1.5 text-sm font-bold ${KIND_STYLE[c.kind]}`}>{codeBadge(c.code)}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{c.name}</span>

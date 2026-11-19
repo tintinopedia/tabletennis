@@ -116,7 +116,7 @@ export function SessionPlanner() {
       <Toast text={toast} />
       <section className="card p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-full flex-1 sm:w-auto">
+          <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
             <h2 className="font-display text-2xl font-bold uppercase">Planned sessions</h2>
             <p className="text-sm text-muted">
               Season 1 runs Day 1 to Day {PLAN_LENGTH}. New sessions are added after the last planned day and unlock in order on the Training page.
