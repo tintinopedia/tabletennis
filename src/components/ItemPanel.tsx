@@ -39,6 +39,8 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
   const kind = def?.kind ?? "table";
   const hasResults = testDefs.length > 0 || item.hr;
   const showResults = hasResults && status !== "skipped";
+  // videos stay visible at the table (collapse the step to hide them once it's done)
+  const showVideos = open || status !== "done";
   const needsScores = status === "done" && testDefs.some((t) => tests[t.code]?.score == null);
 
   return (
@@ -75,8 +77,15 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
         </div>
       </div>
 
-      {(open || showResults) && (
+      {(open || showResults || (showVideos && videos.length > 0)) && (
         <div className="space-y-5 border-t border-line p-3 sm:p-4">
+          {showVideos && videos.length > 0 && (
+            <div className={`grid gap-3 ${videos.length > 1 ? "sm:grid-cols-2" : "sm:max-w-xl"}`}>
+              {videos.map((v) => (
+                <VideoEmbed key={v.url} v={v} />
+              ))}
+            </div>
+          )}
           {open && (
             <>
               {prescription.length > 0 && (
@@ -98,13 +107,6 @@ export function ItemPanel({ day, item, index, def, status, tests, hr, readOnly, 
                     </li>
                   ))}
                 </ol>
-              )}
-              {videos.length > 0 && (
-                <div className={`grid gap-3 ${videos.length > 1 ? "sm:grid-cols-2" : "sm:max-w-xl"}`}>
-                  {videos.map((v) => (
-                    <VideoEmbed key={v.url} v={v} />
-                  ))}
-                </div>
               )}
               {exhibits.length > 0 && <ExhibitGrid items={exhibits} />}
               {(def?.images.length ?? 0) > 0 && <StoredImageGrid images={def!.images} />}
