@@ -329,3 +329,46 @@ select.field option {
   padding: 0 2px;
   color: inherit;
 }
+
+/* ---------- Sponsor Me corner ribbon ---------- */
+.sponsor-corner {
+  bottom: calc(64px + env(safe-area-inset-bottom)); /* clears the phone tab bar */
+}
+@media (min-width: 768px) {
+  .sponsor-corner {
+    bottom: 0;
+  }
+}
+.sponsor-ribbon {
+  width: 210px;
+  height: 36px;
+  right: -52px;
+  bottom: 30px;
+  transform: rotate(-45deg);
+  background: linear-gradient(90deg, #e0302e, #f26a35);
+  box-shadow: 0 6px 18px rgba(224, 48, 46, 0.45);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  animation: sponsor-blink 1.4s ease-in-out infinite;
+}
+.sponsor-ribbon:hover,
+.sponsor-ribbon:focus-visible {
+  animation-play-state: paused;
+  filter: brightness(1.15);
+}
+@keyframes sponsor-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 6px 18px rgba(224, 48, 46, 0.45);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 30px 6px rgba(242, 106, 53, 0.75);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-ribbon {
+    animation: none;
+  }
+}

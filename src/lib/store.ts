@@ -25,7 +25,7 @@ export type MantraSection = { id: string; title: string; hint?: string; points: 
 export type MantraDoc = { sections: MantraSection[]; updatedAt?: number };
 export type RecordingDoc = { id: string; createdAt: number; mime: string; duration: number; data: string };
 
-export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra" | "images" | "posts" | "products";
+export type Coll = "sessions" | "customDays" | "codes" | "videos" | "recordings" | "mantra" | "images" | "posts" | "products" | "pages";
 export type ImageDoc = { data: string; createdAt: number };
 
 /* --------------------------- demo storage -------------------------- */

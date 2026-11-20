@@ -8,12 +8,14 @@ import { SessionPlanner } from "@/components/studio/SessionPlanner";
 import { DrillLibrary } from "@/components/studio/DrillLibrary";
 import { VideoManager } from "@/components/studio/VideoManager";
 import { IngredientManager } from "@/components/studio/IngredientManager";
+import { SponsorEditor } from "@/components/studio/SponsorEditor";
 
 const TABS = [
   ["sessions", "Plan sessions"],
   ["library", "Drill library"],
   ["videos", "Memories"],
   ["ingredients", "Ingredients"],
+  ["sponsor", "Sponsor page"],
 ] as const;
 
 export default function StudioPage() {
@@ -63,6 +65,7 @@ function Studio() {
           {tab === "library" && <DrillLibrary />}
           {tab === "videos" && <VideoManager />}
           {tab === "ingredients" && <IngredientManager />}
+          {tab === "sponsor" && <SponsorEditor />}
         </div>
       </div>
     </Gate>
