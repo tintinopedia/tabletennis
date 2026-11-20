@@ -38,8 +38,6 @@ export function ProfileCard() {
         <div className="relative -mt-16 p-4 sm:p-6 lg:mt-0 lg:py-8 lg:pl-0 lg:pr-8">
           <div className="rounded-2xl border border-[#3ddbe6]/45 bg-paper/55 p-4 shadow-[0_0_24px_rgba(61,219,230,0.18),inset_0_0_24px_rgba(61,219,230,0.06)] backdrop-blur-sm sm:p-5">
             <div className="flex items-center gap-3 border-b border-[#3ddbe6]/25 pb-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/logo.png" alt="" className="h-12 w-12 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7fe6ee]">Player profile</p>
                 <h1 className="font-display text-4xl font-bold uppercase leading-none sm:text-5xl">Tintin</h1>
