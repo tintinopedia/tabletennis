@@ -69,7 +69,7 @@ function Editor({ page }: { page: PageDoc | null }) {
         </div>
       </div>
       {err && <p className="text-sm text-bad">{err}</p>}
-      <div className="sticky bottom-[calc(94px+env(safe-area-inset-bottom))] z-20 md:bottom-12">
+      <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 md:bottom-12">
         <div className="card flex flex-wrap items-center gap-3 p-3 shadow-2xl shadow-black/50">
           <Toggle checked={published} onChange={setPublished} label={published ? "Published: ribbon shows on the site" : "Hidden: ribbon and page are off"} />
           <span className="flex-1" />

@@ -65,7 +65,7 @@ function Blog() {
         <Link
           href="/blog/edit"
           aria-label="Create post"
-          className="fixed bottom-[calc(102px+env(safe-area-inset-bottom))] left-4 z-30 grid h-14 w-14 place-items-center rounded-full bg-ball text-3xl leading-none text-white shadow-xl shadow-black/50 lg:hidden"
+          className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] left-4 z-30 grid h-14 w-14 place-items-center rounded-full bg-ball text-3xl leading-none text-white shadow-xl shadow-black/50 lg:hidden"
         >
           +
         </Link>

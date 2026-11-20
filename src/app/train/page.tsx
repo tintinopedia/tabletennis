@@ -400,7 +400,7 @@ function Trainer() {
       </div>
 
       {!locked && (
-        <div className="sticky bottom-[calc(94px+env(safe-area-inset-bottom))] z-20 mt-6 md:bottom-12">
+        <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-6 md:bottom-12">
           <div className="card flex flex-wrap items-center gap-3 p-3 shadow-2xl shadow-black/50">
             <div className="min-w-0 flex-1 text-sm">
               {missing.length === 0 ? (

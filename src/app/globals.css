@@ -332,7 +332,7 @@ select.field option {
 
 /* ---------- Sponsor Me corner ribbon ---------- */
 .sponsor-corner {
-  bottom: calc(84px + env(safe-area-inset-bottom)); /* clears the phone tab bar and footer */
+  bottom: calc(64px + env(safe-area-inset-bottom)); /* clears the phone tab bar */
 }
 @media (min-width: 768px) {
   .sponsor-corner {

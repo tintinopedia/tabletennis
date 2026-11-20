@@ -27,8 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <DataProvider>
             <Header />
             <SponsorBadge />
-            <main className="mx-auto max-w-6xl px-4 pb-[calc(110px+env(safe-area-inset-bottom))] sm:px-6 md:pb-20">{children}</main>
-            <footer className="fixed inset-x-0 bottom-[calc(59px+env(safe-area-inset-bottom))] z-30 border-t border-line bg-paper/90 py-1 text-center text-[10px] text-muted backdrop-blur md:bottom-0 md:py-2 md:text-xs">
+            <main className="mx-auto max-w-6xl px-4 pb-[calc(90px+env(safe-area-inset-bottom))] sm:px-6 md:pb-20">{children}</main>
+            <footer className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-line bg-paper/90 py-2 text-center text-xs text-muted backdrop-blur md:block">
               © 2026 Tintin · My Table Tennis Journal. All rights reserved.
             </footer>
           </DataProvider>
