@@ -95,7 +95,7 @@ export default function Home() {
           <div className="mb-3 flex items-end justify-between">
             <Head title="My videos" sub="Swipe through, tap to watch." />
             {user && (
-              <Link href="/studio" className="text-sm font-medium text-[#8fbcf3] hover:underline">
+              <Link href="/studio?tab=videos" className="text-sm font-medium text-[#8fbcf3] hover:underline">
                 Manage
               </Link>
             )}

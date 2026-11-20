@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Gate } from "@/components/Gate";
 import { useAuth } from "@/components/AuthProvider";
 import { GitHubMark } from "@/components/LoginButtons";
@@ -16,11 +17,19 @@ const TABS = [
 ] as const;
 
 export default function StudioPage() {
+  return (
+    <Suspense fallback={<p className="py-20 text-center text-muted">Loading…</p>}>
+      <Studio />
+    </Suspense>
+  );
+}
+
+function Studio() {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("sessions");
+  const qTab = useSearchParams().get("tab");
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get("tab");
-    if (t && TABS.some(([k]) => k === t)) setTab(t as (typeof TABS)[number][0]);
-  }, []);
+    if (qTab && TABS.some(([k]) => k === qTab)) setTab(qTab as (typeof TABS)[number][0]);
+  }, [qTab]);
   const { user, githubLinked, connectGithub } = useAuth();
   return (
     <Gate title="Studio">
