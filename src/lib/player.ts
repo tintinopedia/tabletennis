@@ -6,6 +6,7 @@ export const DOB = "2018-03-11";
 export const LEVELS_MATCH = ["Practice Match", "Competitive Match", "Professional Match"] as const;
 export type MatchLevel = (typeof LEVELS_MATCH)[number];
 
+export type CoachDoc = { id: string; name: string; from: string; to: string; createdAt: number }; // to "" = still coaching
 export type ProfileDoc = { grip: string; style: string; hand: "Right" | "Left" | ""; updatedAt?: number };
 export type Measurement = { id: string; date: string; heightIn: number; weightKg: number; createdAt: number };
 export type MatchDoc = {
@@ -47,7 +48,7 @@ export function winRates(matches: MatchDoc[]) {
   });
 }
 
-function useColl<T>(c: "measurements" | "matches" | "profile") {
+function useColl<T>(c: "measurements" | "matches" | "profile" | "coaches") {
   const [rows, setRows] = useState<(T & { id: string })[] | null>(null);
   useEffect(() => subscribe<T>(c, setRows), [c]);
   return rows;
@@ -64,4 +65,10 @@ export function useProfile(): ProfileDoc | null {
   const rows = useColl<ProfileDoc>("profile");
   if (!rows) return null;
   return rows.find((r) => r.id === "main") ?? { grip: "", style: "", hand: "" };
+}
+
+/** Coaches, most recent first (current coach, i.e. no end date, before past ones) */
+export function useCoaches() {
+  const rows = useColl<CoachDoc>("coaches");
+  return rows ? [...rows].sort((a, b) => Number(!a.to) === Number(!b.to) ? b.from.localeCompare(a.from) || b.createdAt - a.createdAt : a.to ? 1 : -1) : null;
 }

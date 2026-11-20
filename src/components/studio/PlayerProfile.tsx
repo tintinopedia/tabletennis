@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { ConfirmButton, Field, Toast, useToast } from "../ui";
 import { Empty } from "../Charts";
+import { CoachHistory } from "./CoachHistory";
 import { newId, put, remove, saveError } from "@/lib/store";
 import { fmtDate, todayIso } from "@/lib/analytics";
 import { fmtHeight, fmtWeight, useMeasurements, useProfile, type Measurement } from "@/lib/player";
@@ -132,6 +133,8 @@ export function PlayerProfile() {
           </button>
         </div>
       </section>
+
+      <CoachHistory />
 
       <GrowthCharts rows={rows ?? []} />
 

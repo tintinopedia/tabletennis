@@ -1,5 +1,5 @@
 "use client";
-import { ageOf, fmtHeight, fmtWeight, useMatches, useMeasurements, useProfile, winRates } from "@/lib/player";
+import { ageOf, fmtHeight, fmtWeight, useCoaches, useMatches, useMeasurements, useProfile, winRates } from "@/lib/player";
 
 const LABEL: Record<string, string> = { "Practice Match": "Practice", "Competitive Match": "Competitive", "Professional Match": "Professional" };
 
@@ -7,6 +7,7 @@ export function ProfileCard() {
   const profile = useProfile();
   const ms = useMeasurements();
   const matches = useMatches();
+  const coach = useCoaches()?.[0];
   const latest = ms?.[0];
   const age = ageOf();
   const rates = winRates(matches ?? []);
@@ -17,6 +18,7 @@ export function ProfileCard() {
     ["Grip", profile?.grip || "-"],
     ["Style", profile?.style || "-"],
     ["Playing hand", profile?.hand || "-"],
+    ["Current coach", coach ? coach.name : "-"],
   ];
   return (
     <section className="court-bg relative overflow-hidden rounded-3xl">
@@ -45,7 +47,7 @@ export function ProfileCard() {
             </div>
             <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {facts.map(([k, v]) => (
-                <div key={k} className="min-w-0 rounded-xl border border-white/5 bg-card/70 px-3 py-2">
+                <div key={k} className={`min-w-0 rounded-xl border border-white/5 bg-card/70 px-3 py-2 ${k === "Current coach" ? "col-span-2 sm:col-span-3" : ""}`}>
                   <dt className="text-[10px] font-semibold uppercase tracking-wider text-[#7fe6ee]/80">{k}</dt>
                   <dd className="num break-words text-sm font-semibold leading-snug sm:text-base" title={v}>
                     {v}

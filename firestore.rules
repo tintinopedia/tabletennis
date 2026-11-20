@@ -97,6 +97,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAhaan();
     }
+    match /coaches/{id} {
+      allow read: if true;
+      allow write: if isAhaan();
+    }
     // Match notes stay private.
     match /matchNotes/{id} {
       allow read, write: if isAhaan();
