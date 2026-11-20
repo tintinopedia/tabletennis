@@ -5,6 +5,8 @@ import { useData } from "@/components/DataProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { VolumeChart, DrillPeriodChart, HrPeriodChart, HrReadingsChart, Sparkline, MiniLine, Empty } from "@/components/Charts";
 import { VideoCarousel } from "@/components/Media";
+import { IngredientCarousel } from "@/components/ingredients/IngredientCarousel";
+import { useProducts } from "@/components/ingredients/useProducts";
 import { phaseList, isPhysicalTest } from "@/lib/plan";
 import { subscribe, type VideoDoc } from "@/lib/store";
 import {
@@ -31,6 +33,7 @@ export default function Home() {
   const [videos, setVideos] = useState<VideoDoc[]>([]);
   useEffect(() => subscribe<VideoDoc>("videos", (rows) => setVideos(rows.filter((v) => v.published).sort((a, b) => b.order - a.order)), { publishedOnly: true }), []);
   const [period, setPeriod] = useState<Period>("month");
+  const ingredients = useProducts({ publishedOnly: true });
   const [drill, setDrill] = useState<string | null>(null);
   const [hrCode, setHrCode] = useState<string | null>(null);
 
@@ -412,6 +415,25 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* Training ingredients */}
+      {((ingredients && ingredients.length > 0) || user) && (
+        <section id="ingredients" className="scroll-mt-24">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <Head title="Training ingredients" sub="The kit and gear behind every session." />
+            {user ? (
+              <Link href="/studio?tab=ingredients" className="shrink-0 text-sm font-medium text-[#8fbcf3] hover:underline">
+                Manage
+              </Link>
+            ) : (
+              <Link href="/ingredients" className="shrink-0 text-sm font-medium text-[#8fbcf3] hover:underline">
+                See all
+              </Link>
+            )}
+          </div>
+          {ingredients && ingredients.length ? <IngredientCarousel items={ingredients} /> : <Empty text="No ingredients yet. Add them in Studio, Ingredients." />}
+        </section>
+      )}
     </div>
   );
 }

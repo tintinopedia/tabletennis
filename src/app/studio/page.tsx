@@ -1,20 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Gate } from "@/components/Gate";
 import { useAuth } from "@/components/AuthProvider";
 import { GitHubMark } from "@/components/LoginButtons";
 import { SessionPlanner } from "@/components/studio/SessionPlanner";
 import { DrillLibrary } from "@/components/studio/DrillLibrary";
 import { VideoManager } from "@/components/studio/VideoManager";
+import { IngredientManager } from "@/components/studio/IngredientManager";
 
 const TABS = [
   ["sessions", "Plan sessions"],
   ["library", "Drill library"],
   ["videos", "My videos"],
+  ["ingredients", "Ingredients"],
 ] as const;
 
 export default function StudioPage() {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("sessions");
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && TABS.some(([k]) => k === t)) setTab(t as (typeof TABS)[number][0]);
+  }, []);
   const { user, githubLinked, connectGithub } = useAuth();
   return (
     <Gate title="Studio">
@@ -47,6 +53,7 @@ export default function StudioPage() {
           {tab === "sessions" && <SessionPlanner />}
           {tab === "library" && <DrillLibrary />}
           {tab === "videos" && <VideoManager />}
+          {tab === "ingredients" && <IngredientManager />}
         </div>
       </div>
     </Gate>
