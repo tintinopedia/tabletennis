@@ -9,6 +9,8 @@ import { DrillLibrary } from "@/components/studio/DrillLibrary";
 import { VideoManager } from "@/components/studio/VideoManager";
 import { IngredientManager } from "@/components/studio/IngredientManager";
 import { SponsorEditor } from "@/components/studio/SponsorEditor";
+import { PlayerProfile } from "@/components/studio/PlayerProfile";
+import { GameStats } from "@/components/studio/GameStats";
 
 const TABS = [
   ["sessions", "Plan sessions"],
@@ -16,6 +18,8 @@ const TABS = [
   ["videos", "Memories"],
   ["ingredients", "Ingredients"],
   ["sponsor", "Sponsor page"],
+  ["profile", "Player profile"],
+  ["games", "Game stats"],
 ] as const;
 
 export default function StudioPage() {
@@ -66,6 +70,8 @@ function Studio() {
           {tab === "videos" && <VideoManager />}
           {tab === "ingredients" && <IngredientManager />}
           {tab === "sponsor" && <SponsorEditor />}
+          {tab === "profile" && <PlayerProfile />}
+          {tab === "games" && <GameStats />}
         </div>
       </div>
     </Gate>

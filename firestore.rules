@@ -84,6 +84,24 @@ service cloud.firestore {
       allow delete: if isAhaan();
     }
 
+    // Player profile, monthly measurements and match results: public read (shown on Home).
+    match /profile/{id} {
+      allow read: if true;
+      allow write: if isAhaan();
+    }
+    match /measurements/{id} {
+      allow read: if true;
+      allow write: if isAhaan();
+    }
+    match /matches/{id} {
+      allow read: if true;
+      allow write: if isAhaan();
+    }
+    // Match notes stay private.
+    match /matchNotes/{id} {
+      allow read, write: if isAhaan();
+    }
+
     // My Videos: the public sees published videos only.
     match /videos/{id} {
       allow read: if resource.data.published == true || isAhaan();

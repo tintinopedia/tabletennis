@@ -5,6 +5,7 @@ import { useData } from "@/components/DataProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { VolumeChart, DrillPeriodChart, HrPeriodChart, HrReadingsChart, Sparkline, MiniLine, Empty } from "@/components/Charts";
 import { VideoCarousel } from "@/components/Media";
+import { ProfileCard } from "@/components/player/ProfileCard";
 import { IngredientCarousel } from "@/components/ingredients/IngredientCarousel";
 import { useProducts } from "@/components/ingredients/useProducts";
 import { phaseList, isPhysicalTest } from "@/lib/plan";
@@ -76,6 +77,8 @@ export default function Home() {
 
   return (
     <div className="space-y-6 pt-6">
+      <ProfileCard />
+
       {/* Hero */}
       <section className="court-bg relative overflow-hidden rounded-3xl p-4 sm:p-5">
         <div className="relative grid grid-cols-3 gap-2 sm:gap-3">
