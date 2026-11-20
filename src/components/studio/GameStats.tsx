@@ -133,7 +133,7 @@ export function GameStats() {
             return (
               <div key={m.id} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 rounded-xl border border-line bg-card-2/40 p-3 md:grid-cols-[140px_minmax(0,1fr)_120px_170px_minmax(0,1fr)_auto] md:items-center">
                 <span className="text-sm text-ink-2 md:order-none">{fmtDate(m.date, { day: "numeric", month: "short", year: "numeric" })}</span>
-                <span className="col-span-2 truncate font-semibold md:col-span-1">vs {m.opponent}</span>
+                <span className="col-span-2 truncate font-semibold md:col-span-1">Tintin vs {m.opponent}</span>
                 <span className="flex items-center gap-2 md:justify-center">
                   <span className="num font-display text-xl font-bold">
                     {m.scoreFor} / {m.scoreAgainst}

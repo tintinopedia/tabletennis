@@ -65,7 +65,7 @@ function Editor({ match, note }: { match: MatchDoc; note: NoteDoc | null }) {
       </Link>
       <div className="card mt-4 p-5 sm:p-6">
         <p className="eyebrow">Match notes · {match.level}</p>
-        <h1 className="font-display mt-1 text-3xl font-bold uppercase sm:text-4xl">vs {match.opponent}</h1>
+        <h1 className="font-display mt-1 text-3xl font-bold uppercase sm:text-4xl">Tintin vs {match.opponent}</h1>
         <p className="mt-1 text-sm text-ink-2">
           {fmtDate(match.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} ·{" "}
           <b className={won ? "text-good" : "text-bad"}>
