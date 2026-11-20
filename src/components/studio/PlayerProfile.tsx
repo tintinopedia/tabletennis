@@ -127,7 +127,7 @@ export function PlayerProfile() {
               </select>
             </Field>
           </div>
-          <button className="btn btn-ghost mt-4" onClick={saveProfile}>
+          <button className="btn btn-primary mt-4" onClick={saveProfile}>
             Save playing details
           </button>
         </div>
