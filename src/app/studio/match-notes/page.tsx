@@ -119,7 +119,7 @@ function Editor({ match, note, onDone }: { match: MatchDoc; note: NoteDoc | null
         </div>
       </div>
       {err && <p className="mt-3 text-sm text-bad">{err}</p>}
-      <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-4 md:bottom-3">
+      <div className="sticky bottom-[calc(94px+env(safe-area-inset-bottom))] z-20 mt-4 md:bottom-12">
         <div className="card flex items-center gap-3 p-3 shadow-2xl shadow-black/50">
           <span className="flex-1 text-sm text-muted">{note ? `Last saved ${new Date(note.updatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` : "New notes"}</span>
           <button className="btn btn-primary" disabled={busy || !editor} onClick={save}>

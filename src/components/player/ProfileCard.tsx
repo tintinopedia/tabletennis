@@ -55,7 +55,6 @@ export function ProfileCard() {
                 </div>
               ))}
             </dl>
-            {latest && <p className="mt-2 text-[11px] text-muted">Height and weight as of {new Date(latest.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>}
 
             <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7fe6ee]">Win rate</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
