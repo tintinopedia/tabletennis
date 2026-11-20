@@ -1,6 +1,6 @@
 /* Tintinopedia service worker: keeps the app shell available and shows an offline page.
    Data (Firestore, YouTube) always comes live from the network. */
-const CACHE = "tintinopedia-v1";
+const CACHE = "tintinopedia-v2";
 const SHELL = ["/offline.html", "/brand/logo.png", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
