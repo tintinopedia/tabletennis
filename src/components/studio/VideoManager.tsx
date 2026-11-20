@@ -56,7 +56,7 @@ export function VideoManager() {
       <Toast text={toast} />
       <section className="card p-5">
         <h2 className="font-display text-2xl font-bold uppercase">{editing ? "Edit video" : "Add a video"}</h2>
-        <p className="text-sm text-muted">Upload to Tintin&apos;s YouTube channel (Public or Unlisted), then paste the link here. Published videos appear in the My Videos carousel on Home.</p>
+        <p className="text-sm text-muted">Upload to Tintin&apos;s YouTube channel (Public or Unlisted), then paste the link here. Published videos appear in the Memories carousel on Home.</p>
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_260px]">
           <div className="space-y-3">
             <Field label="YouTube link">
@@ -104,7 +104,7 @@ export function VideoManager() {
       </section>
 
       <section className="card p-5">
-        <h2 className="font-display text-2xl font-bold uppercase">My videos ({videos.length})</h2>
+        <h2 className="font-display text-2xl font-bold uppercase">Memories ({videos.length})</h2>
         <p className="text-sm text-muted">Top of the list shows first in the carousel.</p>
         <div className="mt-4 space-y-2">
           {videos.length === 0 && <p className="text-sm text-muted">No videos yet.</p>}

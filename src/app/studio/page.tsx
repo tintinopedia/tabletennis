@@ -12,7 +12,7 @@ import { IngredientManager } from "@/components/studio/IngredientManager";
 const TABS = [
   ["sessions", "Plan sessions"],
   ["library", "Drill library"],
-  ["videos", "My videos"],
+  ["videos", "Memories"],
   ["ingredients", "Ingredients"],
 ] as const;
 

@@ -93,14 +93,14 @@ export default function Home() {
       {(videos.length > 0 || user) && (
         <section>
           <div className="mb-3 flex items-end justify-between">
-            <Head title="My videos" sub="Swipe through, tap to watch." />
+            <Head title="Memories" sub="Swipe through, tap to watch." />
             {user && (
               <Link href="/studio?tab=videos" className="text-sm font-medium text-[#8fbcf3] hover:underline">
                 Manage
               </Link>
             )}
           </div>
-          {videos.length ? <VideoCarousel videos={videos} /> : <Empty text="No published videos yet. Add YouTube links in Studio, My videos." />}
+          {videos.length ? <VideoCarousel videos={videos} /> : <Empty text="No published videos yet. Add YouTube links in Studio, Memories." />}
         </section>
       )}
 
