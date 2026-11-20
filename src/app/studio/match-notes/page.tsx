@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Gate } from "@/components/Gate";
 import { Toolbar } from "@/components/blog/Toolbar";
-import { safeParse } from "@/components/blog/PostView";
+import { safeParse, PostBody } from "@/components/blog/PostView";
 import { blogExtensions } from "@/lib/blog";
 import { put, saveError, subscribe } from "@/lib/store";
 import { fmtDate } from "@/lib/analytics";
@@ -31,11 +31,53 @@ function Loader() {
   if (!matches || note === undefined) return <p className="py-20 text-center text-muted">Loading…</p>;
   const match = matches.find((m) => m.id === id);
   if (!match) return <p className="py-20 text-center text-muted">Match not found.</p>;
-  return <Editor match={match} note={note} />;
+  return <Notes match={match} note={note} />;
 }
 
-function Editor({ match, note }: { match: MatchDoc; note: NoteDoc | null }) {
-  const router = useRouter();
+/** Saved notes open read-only; Edit switches to the editor. New notes open straight in the editor. */
+function Notes({ match, note }: { match: MatchDoc; note: NoteDoc | null }) {
+  const [editing, setEditing] = useState(!note);
+  if (editing || !note) return <Editor key={note?.updatedAt ?? "new"} match={match} note={note} onDone={() => setEditing(false)} />;
+  return (
+    <div className="mx-auto max-w-4xl pt-6">
+      <Link href="/studio?tab=games" className="text-sm text-ink-2 hover:text-ink">
+        ‹ Back to Game stats
+      </Link>
+      <MatchHeader match={match}>
+        <button className="btn btn-primary" onClick={() => setEditing(true)}>
+          Edit notes
+        </button>
+      </MatchHeader>
+      <article className="card mt-4 p-5 sm:p-8">
+        <PostBody content={note.content} />
+        <p className="mt-8 border-t border-line pt-3 text-xs text-muted">
+          Last saved {new Date(note.updatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })}
+        </p>
+      </article>
+    </div>
+  );
+}
+
+function MatchHeader({ match, children }: { match: MatchDoc; children?: React.ReactNode }) {
+  const won = match.scoreFor > match.scoreAgainst;
+  return (
+    <div className="card mt-4 flex flex-wrap items-start gap-4 p-5 sm:p-6">
+      <div className="min-w-0 flex-1">
+        <p className="eyebrow">Match notes · {match.level}</p>
+        <h1 className="font-display mt-1 text-3xl font-bold uppercase sm:text-4xl">Tintin vs {match.opponent}</h1>
+        <p className="mt-1 text-sm text-ink-2">
+          {fmtDate(match.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} ·{" "}
+          <b className={won ? "text-good" : "text-bad"}>
+            {match.scoreFor} / {match.scoreAgainst} {won ? "won" : match.scoreFor < match.scoreAgainst ? "lost" : "draw"}
+          </b>
+        </p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Editor({ match, note, onDone }: { match: MatchDoc; note: NoteDoc | null; onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [extensions] = useState(() => blogExtensions("What worked? What didn't? What will you change next time?"));
@@ -44,7 +86,6 @@ function Editor({ match, note }: { match: MatchDoc; note: NoteDoc | null }) {
     { extensions, content: initial, immediatelyRender: false, shouldRerenderOnTransaction: true, editorProps: { attributes: { class: "prose-tt min-h-[320px] outline-none" } } },
     []
   );
-  const won = match.scoreFor > match.scoreAgainst;
   const save = async () => {
     if (!editor) return;
     setBusy(true);
@@ -52,7 +93,8 @@ function Editor({ match, note }: { match: MatchDoc; note: NoteDoc | null }) {
     try {
       await put("matchNotes", match.id, { content: JSON.stringify(editor.getJSON()), updatedAt: Date.now() });
       if (!match.hasNotes) await put("matches", match.id, { ...match, hasNotes: true, updatedAt: Date.now() });
-      router.push("/studio?tab=games");
+      setBusy(false);
+      onDone(); // show the saved notes
     } catch (e) {
       setErr(saveError(e));
       setBusy(false);
@@ -63,16 +105,13 @@ function Editor({ match, note }: { match: MatchDoc; note: NoteDoc | null }) {
       <Link href="/studio?tab=games" className="text-sm text-ink-2 hover:text-ink">
         ‹ Back to Game stats
       </Link>
-      <div className="card mt-4 p-5 sm:p-6">
-        <p className="eyebrow">Match notes · {match.level}</p>
-        <h1 className="font-display mt-1 text-3xl font-bold uppercase sm:text-4xl">Tintin vs {match.opponent}</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          {fmtDate(match.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} ·{" "}
-          <b className={won ? "text-good" : "text-bad"}>
-            {match.scoreFor} / {match.scoreAgainst} {won ? "won" : match.scoreFor < match.scoreAgainst ? "lost" : "draw"}
-          </b>
-        </p>
-      </div>
+      <MatchHeader match={match}>
+        {note && (
+          <button className="btn btn-ghost" onClick={onDone}>
+            Cancel
+          </button>
+        )}
+      </MatchHeader>
       <div className="card mt-4">
         {editor && <Toolbar editor={editor} onError={setErr} />}
         <div className="p-5 sm:p-6">
