@@ -1,0 +1,310 @@
+[
+ {
+  "n": 1,
+  "position": "standard",
+  "category": "Basic (1-Shot)",
+  "name": "Push (B)",
+  "shots": 1
+ },
+ {
+  "n": 2,
+  "position": "standard",
+  "category": "Basic (1-Shot)",
+  "name": "Push (F)",
+  "shots": 1
+ },
+ {
+  "n": 3,
+  "position": "standard",
+  "category": "Basic (1-Shot)",
+  "name": "Drive (B)",
+  "shots": 1
+ },
+ {
+  "n": 4,
+  "position": "standard",
+  "category": "Basic (1-Shot)",
+  "name": "Drive (F)",
+  "shots": 1
+ },
+ {
+  "n": 5,
+  "position": "standard",
+  "category": "Basic (1-Shot)",
+  "name": "Loop (F)",
+  "shots": 1
+ },
+ {
+  "n": 6,
+  "position": "standard",
+  "category": "Basic (1-Shot)",
+  "name": "Loop (B)",
+  "shots": 1
+ },
+ {
+  "n": 7,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Loop (B) - Drive (B)",
+  "shots": 2
+ },
+ {
+  "n": 8,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Loop (F) - Drive (F)",
+  "shots": 2
+ },
+ {
+  "n": 9,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Drive (F) - Drive (B)",
+  "shots": 2
+ },
+ {
+  "n": 10,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Push (F) - Drive (F)",
+  "shots": 2
+ },
+ {
+  "n": 11,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Push (B) - Loop (B)",
+  "shots": 2
+ },
+ {
+  "n": 12,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Loop (F) - Drive (B)",
+  "shots": 2
+ },
+ {
+  "n": 13,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Push (F) - Loop (B)",
+  "shots": 2
+ },
+ {
+  "n": 14,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Drive (F) - Drive (F)",
+  "shots": 2
+ },
+ {
+  "n": 15,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Push (B) - Loop (F)",
+  "shots": 2
+ },
+ {
+  "n": 16,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Push (F) - Loop (F)",
+  "shots": 2
+ },
+ {
+  "n": 17,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Loop (F) - Loop (F)",
+  "shots": 2
+ },
+ {
+  "n": 18,
+  "position": "standard",
+  "category": "Combined (2-Shot)",
+  "name": "Loop (B) - Drive (F)",
+  "shots": 2
+ },
+ {
+  "n": 19,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Loop (B) - Drive (B) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 20,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (F) - Loop (F) - Drive (B)",
+  "shots": 3
+ },
+ {
+  "n": 21,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (B) - Loop (F) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 22,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (B) - Loop (B) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 23,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Drive (B) - Drive (F) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 24,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (F) - Loop (F) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 25,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Loop (F) - Drive (B) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 26,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (B) - Loop (B) - Drive (B)",
+  "shots": 3
+ },
+ {
+  "n": 27,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (F) - Loop (B) - Drive (B)",
+  "shots": 3
+ },
+ {
+  "n": 28,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (B) - Loop (F) - Drive (B)",
+  "shots": 3
+ },
+ {
+  "n": 29,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Loop (F) - Drive (F) - Drive (B)",
+  "shots": 3
+ },
+ {
+  "n": 30,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Loop (B) - Drive (F) - Drive (B)",
+  "shots": 3
+ },
+ {
+  "n": 31,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Drive (F) - Drive (F) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 32,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Forehand, Middle, Backhand 3-Point",
+  "shots": 3
+ },
+ {
+  "n": 33,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Random Drive",
+  "shots": 1
+ },
+ {
+  "n": 34,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "2/3 Court Random Drive",
+  "shots": 1
+ },
+ {
+  "n": 35,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "All Random",
+  "shots": 1
+ },
+ {
+  "n": 36,
+  "position": "standard",
+  "category": "Complex & Random",
+  "name": "Push (F) - Loop (B) - Drive (F)",
+  "shots": 3
+ },
+ {
+  "n": 37,
+  "position": "near",
+  "category": "Basic (1-Shot)",
+  "name": "Drive (F)",
+  "shots": 1
+ },
+ {
+  "n": 38,
+  "position": "near",
+  "category": "Basic (1-Shot)",
+  "name": "Push (F)",
+  "shots": 1
+ },
+ {
+  "n": 39,
+  "position": "near",
+  "category": "Basic (1-Shot)",
+  "name": "Loop (F)",
+  "shots": 1
+ },
+ {
+  "n": 40,
+  "position": "near",
+  "category": "Basic (1-Shot)",
+  "name": "Drive (B)",
+  "shots": 1
+ },
+ {
+  "n": 41,
+  "position": "near",
+  "category": "Basic (1-Shot)",
+  "name": "Push (B)",
+  "shots": 1
+ },
+ {
+  "n": 42,
+  "position": "near",
+  "category": "Basic (1-Shot)",
+  "name": "Loop (B)",
+  "shots": 1
+ },
+ {
+  "n": 43,
+  "position": "near",
+  "category": "Combined (2-Shot)",
+  "name": "Drive (F) - Drive (F)",
+  "shots": 2
+ },
+ {
+  "n": 44,
+  "position": "near",
+  "category": "Combined (2-Shot)",
+  "name": "Drive (F) - Drive (B)",
+  "shots": 2
+ }
+]

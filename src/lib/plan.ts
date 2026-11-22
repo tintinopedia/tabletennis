@@ -1,4 +1,5 @@
 import planData from "@/data/plan.json";
+import { novaCatalog } from "./nova";
 
 /* ------------------------------------------------------------------ */
 /* Built-in Season 1 plan (Ahaan-Table-Tennis-Training-Plan xlsx)      */
@@ -31,7 +32,7 @@ export type Level = (typeof LEVELS)[number];
 /* ------------------------------------------------------------------ */
 /* Catalog model: every code (built-in or custom) the planner can use */
 /* ------------------------------------------------------------------ */
-export const SECTIONS = ["Warm-up", "Table drills", "Physical", "Cooldown", "Mental", "Other"] as const;
+export const SECTIONS = ["Warm-up", "Table drills", "Nova robot", "Physical", "Cooldown", "Mental", "Other"] as const;
 export type Section = (typeof SECTIONS)[number];
 export type Kind = "table" | "physical" | "mental";
 export type Step = { k: string; v: string };
@@ -216,7 +217,7 @@ function buildBuiltinCatalog(): Catalog {
   }
   return cat;
 }
-export const BUILTIN_CATALOG = buildBuiltinCatalog();
+export const BUILTIN_CATALOG: Catalog = { ...buildBuiltinCatalog(), ...novaCatalog() };
 
 export function mergeCatalog(docs: CodeDoc[]): Catalog {
   const out: Catalog = {};

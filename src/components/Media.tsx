@@ -69,7 +69,7 @@ export function ExhibitGrid({ items }: { items: Exhibit[] }) {
         ))}
       </div>
       {open != null && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper/95 p-4" onClick={() => setOpen(null)}>
+        <div data-lightbox className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-paper/95 p-4" onClick={() => setOpen(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={items[open].src} alt={items[open].title} className="max-h-[85vh] max-w-full rounded-lg" />
           <p className="mt-3 text-sm text-ink">

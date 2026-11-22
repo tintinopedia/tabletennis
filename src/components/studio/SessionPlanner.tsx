@@ -6,6 +6,7 @@ import { KIND_STYLE, codeBadge } from "../ItemPanel";
 import { PLAN_LENGTH, SECTIONS, type CustomDayDoc, type DayItem } from "@/lib/plan";
 import { fmtDate } from "@/lib/analytics";
 import { put, remove, saveError } from "@/lib/store";
+import { DrillDrawer, InfoButton, NovaFilterBar, novaVisible, useNovaFilter } from "./DrillDrawer";
 
 type Draft = CustomDayDoc & { mainText: string };
 
@@ -15,6 +16,8 @@ export function SessionPlanner() {
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [toast, showToast] = useToast();
+  const [info, setInfo] = useState<string | null>(null);
+  const [nova, setNova] = useNovaFilter();
   const custom = days.filter((d) => d.custom);
   const nextDay = days.length + 1;
   const lastCustom = custom[custom.length - 1];
@@ -87,10 +90,10 @@ export function SessionPlanner() {
     return SECTIONS.map((s) => ({
       section: s,
       codes: Object.values(catalog)
-        .filter((c) => c.section === s && (!term || c.code.toLowerCase().includes(term) || c.name.toLowerCase().includes(term)))
+        .filter((c) => c.section === s && novaVisible(c.code, nova) && (!term || c.code.toLowerCase().includes(term) || c.name.toLowerCase().includes(term)))
         .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
-    })).filter((g) => g.codes.length);
-  }, [catalog, q]);
+    })).filter((g) => g.codes.length || g.section === "Nova robot");
+  }, [catalog, q, nova]);
 
   const toggleCode = (code: string) =>
     setDraft((d) => {
@@ -114,6 +117,7 @@ export function SessionPlanner() {
   return (
     <div className="space-y-6">
       <Toast text={toast} />
+      <DrillDrawer code={info} onClose={() => setInfo(null)} />
       <section className="card p-5">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
@@ -197,7 +201,10 @@ export function SessionPlanner() {
               <div className="mt-3 max-h-[480px] space-y-4 overflow-y-auto pr-1">
                 {grouped.map((g) => (
                   <div key={g.section}>
-                    <p className="mb-1.5 text-xs font-semibold text-ink-2">{g.section}</p>
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                      <p className="flex-1 text-xs font-semibold text-ink-2">{g.section}</p>
+                      {g.section === "Nova robot" && <NovaFilterBar value={nova} onChange={setNova} />}
+                    </div>
                     <div className="grid gap-1.5 sm:grid-cols-2">
                       {g.codes.map((c) => {
                         const on = draft.items.some((i) => i.code === c.code);
@@ -205,7 +212,8 @@ export function SessionPlanner() {
                           <label key={c.code} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-sm transition ${on ? "border-table bg-table/10" : "border-line hover:bg-card-2"}`}>
                             <input type="checkbox" checked={on} onChange={() => toggleCode(c.code)} className="accent-[#3987e5]" />
                             <span className={`font-display rounded px-1.5 text-xs font-bold ${KIND_STYLE[c.kind]}`}>{codeBadge(c.code)}</span>
-                            <span className="truncate">{c.name}</span>
+                            <span className="min-w-0 flex-1 truncate" title={c.name}>{c.name}</span>
+                            <InfoButton code={c.code} onOpen={setInfo} className="!h-6 !w-6" />
                           </label>
                         );
                       })}
@@ -225,7 +233,8 @@ export function SessionPlanner() {
                       <div className="flex items-center gap-2">
                         <span className="num w-5 text-xs text-muted">{i + 1}</span>
                         <span className={`font-display rounded px-1.5 text-sm font-bold ${KIND_STYLE[def?.kind ?? "table"]}`}>{codeBadge(it.code)}</span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{def?.name ?? it.code}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium" title={def?.name}>{def?.name ?? it.code}</span>
+                        <InfoButton code={it.code} onOpen={setInfo} className="!h-6 !w-6" />
                         <button aria-label="Move up" className="rounded px-1.5 text-ink-2 hover:bg-card-3" onClick={() => move(i, -1)}>
                           ↑
                         </button>

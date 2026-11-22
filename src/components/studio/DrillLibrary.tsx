@@ -6,6 +6,7 @@ import { KIND_STYLE, codeBadge } from "../ItemPanel";
 import { BUILTIN_CATALOG, SECTIONS, youtubeId, ytThumb, type CodeDoc, type Kind, type Section, type Step, type TestDef, type VideoRef } from "@/lib/plan";
 import { getImage, newId, put, remove, saveError } from "@/lib/store";
 import { compressImage } from "@/lib/image";
+import { DrillDrawer, InfoButton, NovaFilterBar, novaVisible, useNovaFilter } from "./DrillDrawer";
 
 /** Image in the editor: existing (id) or freshly picked (data, uploaded on save) */
 type DraftImage = { id?: string; title: string; data?: string };
@@ -48,6 +49,8 @@ export function DrillLibrary() {
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [toast, showToast] = useToast();
+  const [info, setInfo] = useState<string | null>(null);
+  const [nova, setNova] = useNovaFilter();
   const edited = new Set(codeDocs.map((d) => d.code));
   const usedCodes = useMemo(() => new Set(customDays.flatMap((d) => d.items.map((i) => i.code))), [customDays]);
 
@@ -137,12 +140,20 @@ export function DrillLibrary() {
   };
 
   const term = q.trim().toLowerCase();
-  const list = Object.values(catalog).filter((c) => !term || c.code.toLowerCase().includes(term) || c.name.toLowerCase().includes(term));
+  const list = Object.values(catalog).filter((c) => (!term || c.code.toLowerCase().includes(term) || c.name.toLowerCase().includes(term)) && novaVisible(c.code, nova));
   const set = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
 
   return (
     <div className="space-y-6">
       <Toast text={toast} />
+      <DrillDrawer
+        code={info}
+        onClose={() => setInfo(null)}
+        onEdit={(c) => {
+          setInfo(null);
+          open(c);
+        }}
+      />
       <section className="card p-5">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
@@ -157,13 +168,20 @@ export function DrillLibrary() {
         <div className="mt-4 space-y-5">
           {SECTIONS.map((s) => {
             const codes = list.filter((c) => c.section === s).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-            if (!codes.length) return null;
+            if (!codes.length && s !== "Nova robot") return null;
             return (
               <div key={s}>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-2">{s}</p>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="flex-1 text-xs font-semibold uppercase tracking-wider text-ink-2">
+                    {s}
+                    {s === "Nova robot" && <span className="ml-2 normal-case tracking-normal text-muted">Pongbot Nova S Pro presets ({codes.length} shown)</span>}
+                  </p>
+                  {s === "Nova robot" && <NovaFilterBar value={nova} onChange={setNova} />}
+                </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {codes.map((c) => (
-                    <button key={c.code} onClick={() => open(c.code)} className="flex min-w-0 items-center gap-3 rounded-xl border border-line bg-card-2/40 p-3 text-left transition hover:border-line-2 hover:bg-card-2">
+                    <div key={c.code} className="flex min-w-0 items-center gap-1 rounded-xl border border-line bg-card-2/40 pr-1.5 transition hover:border-line-2 hover:bg-card-2">
+                    <button onClick={() => open(c.code)} className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left">
                       <span className={`font-display grid h-10 min-w-10 place-items-center rounded-lg px-1.5 text-sm font-bold ${KIND_STYLE[c.kind]}`}>{codeBadge(c.code)}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{c.name}</span>
@@ -177,6 +195,8 @@ export function DrillLibrary() {
                         </span>
                       </span>
                     </button>
+                    <InfoButton code={c.code} onOpen={setInfo} />
+                    </div>
                   ))}
                 </div>
               </div>

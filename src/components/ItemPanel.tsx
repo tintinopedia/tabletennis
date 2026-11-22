@@ -11,7 +11,7 @@ export const KIND_STYLE = {
   physical: "bg-ball/15 text-[#ffa27c]",
   mental: "bg-[#9085e9]/15 text-[#b9b1f3]",
 };
-export const codeBadge = (code: string) => (code.length > 4 ? code.split(/\s+/).map((w) => w[0]).join("").slice(0, 4) : code);
+export const codeBadge = (code: string) => (/^NV\d+-[RL][123]$/.test(code) ? `N${code.slice(2).split("-")[0]}` : code.length > 4 ? code.split(/\s+/).map((w) => w[0]).join("").slice(0, 4) : code);
 
 type Props = {
   day: Day;
