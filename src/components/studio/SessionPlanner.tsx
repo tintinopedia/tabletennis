@@ -180,40 +180,52 @@ export function SessionPlanner() {
             <h2 className="font-display flex-1 text-2xl font-bold uppercase">{customDays.some((c) => c.day === draft.day) ? "Edit" : "Plan"} Day {draft.day}</h2>
             <span className="num text-sm text-muted">{total} min total</span>
           </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_200px]">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_200px] [&>*]:min-w-0">
             <Field label="Session title">
               <input className="field w-full px-3 py-2 text-sm" value={draft.sessionType} placeholder="e.g. Table: footwork + serve practice" onChange={(e) => setDraft({ ...draft, sessionType: e.target.value })} />
             </Field>
             <Field label="Plan date" hint="optional">
-              <input type="date" className="field w-full px-3 py-2 text-sm" value={draft.plannedDate ?? ""} onChange={(e) => setDraft({ ...draft, plannedDate: e.target.value })} />
+              <input type="date" className="field block w-full min-w-0 appearance-none px-3 py-2 text-sm" value={draft.plannedDate ?? ""} onChange={(e) => setDraft({ ...draft, plannedDate: e.target.value })} />
             </Field>
           </div>
           <Field label="Session notes" hint="one line per point, optional" className="mt-4">
             <textarea rows={2} className="field w-full px-3 py-2 text-sm" value={draft.mainText} onChange={(e) => setDraft({ ...draft, mainText: e.target.value })} />
           </Field>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 [&>*]:min-w-0">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="eyebrow flex-1">Pick drills</p>
-                <input className="field w-48 px-3 py-1.5 text-sm" placeholder="Search codes" value={q} onChange={(e) => setQ(e.target.value)} />
+                <input className="field min-w-0 basis-full px-3 py-1.5 text-sm sm:basis-auto sm:w-48" placeholder="Search drills" value={q} onChange={(e) => setQ(e.target.value)} />
               </div>
-              <div className="mt-3 max-h-[480px] space-y-4 overflow-y-auto pr-1">
+              <div className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto">
                 {grouped.map((g) => (
-                  <div key={g.section}>
+                  <button
+                    key={g.section}
+                    type="button"
+                    onClick={() => document.getElementById(`pick-${g.section}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                    className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${g.section === "Nova robot" ? "border-ball/50 text-[#ffa27c]" : "border-line text-ink-2"} hover:bg-card-2`}
+                  >
+                    {g.section} ({g.codes.length})
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 space-y-4 lg:max-h-[560px] lg:overflow-y-auto lg:pr-1">
+                {grouped.map((g) => (
+                  <div key={g.section} id={`pick-${g.section}`} className="scroll-mt-24">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <p className="flex-1 text-xs font-semibold text-ink-2">{g.section}</p>
                       {g.section === "Nova robot" && <NovaFilterBar value={nova} onChange={setNova} />}
                     </div>
-                    <div className="grid gap-1.5 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-1.5 [&>*]:min-w-0">
                       {g.codes.map((c) => {
                         const on = draft.items.some((i) => i.code === c.code);
                         return (
-                          <label key={c.code} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-sm transition ${on ? "border-table bg-table/10" : "border-line hover:bg-card-2"}`}>
+                          <label key={c.code} className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border py-1 pl-3 pr-1.5 text-sm transition ${on ? "border-table bg-table/10" : "border-line hover:bg-card-2"}`}>
                             <input type="checkbox" checked={on} onChange={() => toggleCode(c.code)} className="accent-[#3987e5]" />
-                            <span className={`font-display rounded px-1.5 text-xs font-bold ${KIND_STYLE[c.kind]}`}>{codeBadge(c.code)}</span>
+                            <span className={`font-display shrink-0 rounded px-1.5 text-xs font-bold ${KIND_STYLE[c.kind]}`}>{codeBadge(c.code)}</span>
                             <span className="min-w-0 flex-1 truncate" title={c.name}>{c.name}</span>
-                            <InfoButton code={c.code} onOpen={setInfo} className="!h-6 !w-6" />
+                            <InfoButton code={c.code} onOpen={setInfo} />
                           </label>
                         );
                       })}
@@ -234,7 +246,7 @@ export function SessionPlanner() {
                         <span className="num w-5 text-xs text-muted">{i + 1}</span>
                         <span className={`font-display rounded px-1.5 text-sm font-bold ${KIND_STYLE[def?.kind ?? "table"]}`}>{codeBadge(it.code)}</span>
                         <span className="min-w-0 flex-1 truncate text-sm font-medium" title={def?.name}>{def?.name ?? it.code}</span>
-                        <InfoButton code={it.code} onOpen={setInfo} className="!h-6 !w-6" />
+                        <InfoButton code={it.code} onOpen={setInfo} />
                         <button aria-label="Move up" className="rounded px-1.5 text-ink-2 hover:bg-card-3" onClick={() => move(i, -1)}>
                           ↑
                         </button>

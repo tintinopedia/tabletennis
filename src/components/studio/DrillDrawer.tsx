@@ -61,7 +61,7 @@ export function DrillDrawer({ code, onClose, onEdit }: { code: string | null; on
   const activeLevel = nova ? NOVA_LEVELS[nova.star].site : null;
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={def.name}>
+    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={def.name}>
       <div className="absolute inset-0 bg-black/60 [animation:fade-in_.2s_ease-out]" onClick={onClose} />
       <aside className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col border-l border-line-2 bg-card shadow-2xl [animation:drawer-in_.25s_ease-out]">
         <header className="flex items-start gap-3 border-b border-line p-4">
