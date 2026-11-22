@@ -15,7 +15,7 @@ const SPIN = {
   Push: { color: "#8fbcf3", label: "Push = light backspin" },
   Loop: { color: "#b9a6ff", label: "Loop = heavy backspin" },
 };
-const ROBOT = { standard: { x: 38, y: MID_Y }, near: { x: NET - 26, y: MID_Y } };
+const ROBOT = { standard: { x: T.x1 + 30, y: MID_Y }, near: { x: NET - 26, y: MID_Y } };
 
 const font = `font-family="Inter, Arial, sans-serif"`;
 const head = () =>
@@ -137,11 +137,11 @@ function position(pos) {
   const r = ROBOT[pos];
   const note =
     pos === "near"
-      ? ["Robot sits right behind the net", "on its own half. Balls land short:", "pushes, flicks, over-the-table attacks."]
-      : ["Robot sits centred behind the far", "end line, like an opponent.", "Balls land long and deep."];
-  const nx = pos === "near" ? T.x1 + 18 : T.x1 + 40;
+      ? ["Robot sits on the table, right behind", "the net on its own half. Balls land short:", "pushes, flicks, over-the-table attacks."]
+      : ["Robot sits on the table, centred at", "the far end line. No stand needed.", "Balls land long and deep."];
+  const nx = pos === "near" ? T.x1 + 18 : T.x1 + 70;
   const ny = pos === "near" ? T.y1 + 26 : T.y1 + 30;
-  s += `<rect x="${nx - 10}" y="${ny - 18}" width="214" height="66" rx="8" fill="#0b1220" fill-opacity=".82" stroke="#ffd23f" stroke-opacity=".5"/>`;
+  s += `<rect x="${nx - 10}" y="${ny - 18}" width="236" height="66" rx="8" fill="#0b1220" fill-opacity=".82" stroke="#ffd23f" stroke-opacity=".5"/>`;
   note.forEach((l, i) => (s += `<text x="${nx}" y="${ny + i * 17}" ${font} font-size="11.5" fill="#e8eef8">${l}</text>`));
   s += `<path d="M${r.x + 20} ${r.y} L ${pos === "near" ? NET + 52 : T.x2 - 62} ${r.y}" stroke="#ffd23f" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#ah)" opacity=".8"/>`;
   s += `<text x="${T.x1}" y="${H - 16}" ${font} font-size="11" fill="#9fb0c8">${pos === "near" ? "Used by presets #37 to #44" : "Used by presets #1 to #36"} · switch RH / LH mode in the Nova app to mirror the placements</text>`;

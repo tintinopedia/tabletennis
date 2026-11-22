@@ -68,7 +68,7 @@ function build(p: Pattern, hand: NovaHand, star: number): CodeDef {
   const posName = p.position === "near" ? "Near-net position" : "Standard position";
   const steps: Step[] = [
     { k: "Level", v: `${lv.stars} ${lv.label} (site level: ${lv.site}). ${lv.text}` },
-    { k: "Robot", v: `${posName}: ${p.position === "near" ? "set Nova right behind the net on its own half" : "set Nova centred behind the far end line"}. In the Nova app choose ${p.category}, pattern #${p.n}, ${hand === "RH" ? "Right-handed" : "Left-handed"} mode, ${lv.stars}. Preset #${preset} of 264.` },
+    { k: "Robot", v: `${posName}: ${p.position === "near" ? "place Nova on the table right behind the net, on the far half" : "place Nova on the table, centred at the far end line (no stand needed)"}. In the Nova app choose ${p.category}, pattern #${p.n}, ${hand === "RH" ? "Right-handed" : "Left-handed"} mode, ${lv.stars}. Preset #${preset} of 264.` },
     ...feedSteps(p, hand),
   ];
   if (PAIRS[p.n]) steps.push({ k: "Pairs with", v: PAIRS[p.n] });
