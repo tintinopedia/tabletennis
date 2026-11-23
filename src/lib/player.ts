@@ -7,7 +7,7 @@ export const LEVELS_MATCH = ["Practice Match", "Competitive Match", "Professiona
 export type MatchLevel = (typeof LEVELS_MATCH)[number];
 
 export type CoachDoc = { id: string; name: string; from: string; to: string; createdAt: number }; // to "" = still coaching
-export type ProfileDoc = { grip: string; style: string; hand: "Right" | "Left" | ""; updatedAt?: number };
+export type ProfileDoc = { grip: string; style: string; hand: "Right" | "Left" | ""; playingSince?: string; updatedAt?: number };
 export type Measurement = { id: string; date: string; heightIn: number; weightKg: number; createdAt: number };
 export type MatchDoc = {
   id: string;

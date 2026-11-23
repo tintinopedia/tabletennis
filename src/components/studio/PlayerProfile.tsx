@@ -27,12 +27,14 @@ export function PlayerProfile() {
   const [grip, setGrip] = useState("");
   const [style, setStyle] = useState("");
   const [hand, setHand] = useState<"Right" | "Left" | "">("");
+  const [since, setSince] = useState("2026");
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     if (profile && !loaded) {
       setGrip(profile.grip ?? "");
       setStyle(profile.style ?? "");
       setHand(profile.hand ?? "");
+      setSince(profile.playingSince || "2026");
       setLoaded(true);
     }
   }, [profile, loaded]);
@@ -63,7 +65,7 @@ export function PlayerProfile() {
   };
   const saveProfile = async () => {
     try {
-      await put("profile", "main", { grip: grip.trim(), style: style.trim(), hand, updatedAt: Date.now() });
+      await put("profile", "main", { grip: grip.trim(), style: style.trim(), hand, playingSince: since.trim(), updatedAt: Date.now() });
       showToast("Playing details saved");
     } catch (e) {
       setErr(saveError(e));
@@ -113,7 +115,7 @@ export function PlayerProfile() {
 
         <div className="mt-6 border-t border-line pt-5">
           <p className="eyebrow mb-3">Playing details</p>
-          <div className="grid gap-4 sm:grid-cols-[1fr_1fr_160px]">
+          <div className="grid gap-4 sm:grid-cols-[1fr_1fr_140px_120px]">
             <Field label="Grip">
               <input className="field w-full px-3 py-2 text-sm" placeholder="e.g. Shakehand" value={grip} onChange={(e) => setGrip(e.target.value)} />
             </Field>
@@ -126,6 +128,9 @@ export function PlayerProfile() {
                 <option>Right</option>
                 <option>Left</option>
               </select>
+            </Field>
+            <Field label="Playing since">
+              <input className="field w-full px-3 py-2 text-sm" inputMode="numeric" maxLength={4} placeholder="2026" value={since} onChange={(e) => setSince(e.target.value.replace(/\D/g, ""))} />
             </Field>
           </div>
           <button className="btn btn-primary mt-4" onClick={saveProfile}>
