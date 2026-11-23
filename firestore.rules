@@ -101,6 +101,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAhaan();
     }
+    // Sponsor logos are public; their change history is private.
+    match /sponsors/{id} {
+      allow read: if true;
+      allow write: if isAhaan();
+    }
+    match /sponsorLog/{id} {
+      allow read, create: if isAhaan();
+      allow update, delete: if false;
+    }
     // Match notes stay private.
     match /matchNotes/{id} {
       allow read, write: if isAhaan();

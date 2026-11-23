@@ -8,6 +8,7 @@ import { VideoCarousel } from "@/components/Media";
 import { ProfileCard } from "@/components/player/ProfileCard";
 import { IngredientCarousel } from "@/components/ingredients/IngredientCarousel";
 import { useProducts } from "@/components/ingredients/useProducts";
+import { SponsorWall } from "@/components/sponsors/SponsorWall";
 import { phaseList, isPhysicalTest } from "@/lib/plan";
 import { subscribe, type VideoDoc } from "@/lib/store";
 import {
@@ -437,6 +438,9 @@ export default function Home() {
           {ingredients && ingredients.length ? <IngredientCarousel items={ingredients} /> : <Empty text="No ingredients yet. Add them in Studio, Ingredients." />}
         </section>
       )}
+
+      {/* Sponsors, just above the footer */}
+      <SponsorWall />
     </div>
   );
 }

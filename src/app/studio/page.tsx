@@ -11,6 +11,7 @@ import { IngredientManager } from "@/components/studio/IngredientManager";
 import { SponsorEditor } from "@/components/studio/SponsorEditor";
 import { PlayerProfile } from "@/components/studio/PlayerProfile";
 import { GameStats } from "@/components/studio/GameStats";
+import { SponsorsManager } from "@/components/studio/SponsorsManager";
 
 const TABS = [
   ["sessions", "Plan sessions"],
@@ -18,6 +19,7 @@ const TABS = [
   ["videos", "Memories"],
   ["ingredients", "Ingredients"],
   ["sponsor", "Sponsor page"],
+  ["sponsors", "Sponsors"],
   ["profile", "Player profile"],
   ["games", "Game stats"],
 ] as const;
@@ -70,6 +72,7 @@ function Studio() {
           {tab === "videos" && <VideoManager />}
           {tab === "ingredients" && <IngredientManager />}
           {tab === "sponsor" && <SponsorEditor />}
+          {tab === "sponsors" && <SponsorsManager />}
           {tab === "profile" && <PlayerProfile />}
           {tab === "games" && <GameStats />}
         </div>
