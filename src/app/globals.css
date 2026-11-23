@@ -381,3 +381,8 @@ select.field option {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+/* no top gap when content starts with a heading */
+.prose-tt > :first-child,
+.prose-tt .ProseMirror > :first-child {
+  margin-top: 0;
+}
