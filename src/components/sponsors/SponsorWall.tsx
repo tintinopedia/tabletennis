@@ -25,11 +25,11 @@ export function SponsorWall() {
             Your brand here. Tap to sponsor my journey.
           </Link>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-6 sm:grid-cols-[repeat(auto-fill,minmax(128px,1fr))] sm:gap-8">
             {sponsors.map((s) => {
               const inner = (
                 <>
-                  <img src={s.logo} alt={s.name} className="max-h-14 max-w-full object-contain opacity-80 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0" />
+                  <img src={s.logo} alt={s.name} className="h-full w-full object-contain transition duration-300 group-hover:scale-105 group-focus-visible:scale-105" />
                   <span
                     role="tooltip"
                     className="pointer-events-none absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-ink px-2.5 py-1 text-xs font-semibold text-paper opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -38,7 +38,7 @@ export function SponsorWall() {
                   </span>
                 </>
               );
-              const cls = "group relative grid h-24 place-items-center rounded-xl border border-white/5 bg-white/[0.04] p-4 outline-none transition hover:border-ball/40 hover:bg-white/[0.08] focus-visible:border-ball";
+              const cls = "group relative grid aspect-square w-full place-items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ball/70";
               return (
                 <li key={s.id}>
                   {s.url ? (
